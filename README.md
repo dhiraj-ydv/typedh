@@ -14,13 +14,13 @@ progress history. No account or cloud database is required.
 
 Open [GitHub Releases](https://github.com/exolithelabs/colemak-dh-tutor/releases),
 choose a version, and expand **Assets**. The published packages are currently
-unsigned prereleases for testing. Windows and Arch Linux x86-64 builds are
+unsigned prereleases for testing. Windows and Linux x86-64 builds are
 available; macOS, ARM, and other Linux package formats are not configured.
 
 | Download | Purpose |
 | --- | --- |
 | `Colemak-DH.Tutor_<version>_x64-setup.exe` | Windows installer |
-| `colemak-dh-tutor-<version>-1-x86_64.pkg.tar.zst` | Arch Linux / pacman package |
+| `colemak-dh-tutor-<version>-x86_64.tar.zst` | Linux `~/.local` tarball with `install.sh` |
 
 The automatically generated **Source code** archives contain project sources,
 not installers. Installed users do not need development tools. The current
@@ -35,19 +35,38 @@ Download and run the `.exe` installer, then launch **Colemak-DH Tutor** from the
 Start menu. Installation is configured for the current Windows user. The unsigned
 installer may show an unknown-publisher warning.
 
-### Linux (Arch / pacman)
+### Linux (Arch-based, ~/.local install)
 
-Download the `.pkg.tar.zst` package, then install it with pacman from the
-directory containing the file:
+Download the `.tar.zst` archive, extract it, and run its installer from the
+extracted directory. No sudo is required; files are installed user-owned
+under `~/.local` so a future in-app updater can replace them:
 
 ```bash
-sudo pacman -U ./colemak-dh-tutor-<version>-1-x86_64.pkg.tar.zst
+tar --zstd -xf colemak-dh-tutor-<version>-x86_64.tar.zst
+cd colemak-dh-tutor-<version>-x86_64
+./install.sh
 ```
 
+This installs roughly:
+
+- binary → `~/.local/bin/`
+- desktop entry → `~/.local/share/applications/`
+- icons → `~/.local/share/icons/`
+
 Launch **Colemak-DH Tutor** from your application menu, or run
-`colemak-dh-tutor` from a terminal. Pacman installs the runtime libraries the
-package declares. This release path is for Arch Linux and compatible pacman
-distributions; it is not published to the AUR or an official Arch repository.
+`colemak-dh-tutor` from a terminal (ensure `~/.local/bin` is on your `PATH`).
+To remove it later, run `./uninstall.sh` from the same extracted directory
+with the same `--prefix` (default `~/.local`).
+
+The tarball targets Arch-based distributions first and does not bundle the
+system WebKit/GTK runtime. Install the runtime libraries for your distro
+before launching; on Arch the pacman names include `webkit2gtk-4.1`, `gtk3`,
+`libsoup3`, `libayatana-appindicator`, `librsvg`, `cairo`, `pango`,
+`gdk-pixbuf2`, `glib2`, `openssl`, `hicolor-icon-theme`, and
+`desktop-file-utils`. The app is not published to the AUR or an official Arch
+repository; GitHub Releases is the distribution path. The previous
+`.pkg.tar.zst` pacman artifact was removed in favor of this tarball (see
+`docs/RELEASING.md`).
 
 ## Using the app
 
@@ -130,7 +149,7 @@ Project layout:
 frontend/           Vue interface
 src-tauri/          Rust commands, SQLite backend, tests, and desktop configuration
 scripts/            Release version checks
-packaging/arch/     Arch Linux PKGBUILD and packaging script
+packaging/linux/    Linux ~/.local tarball scripts (build-tarball, install, uninstall)
 .github/            Build/release workflow and Dependabot configuration
 docs/               Additional maintainer documentation
 ```
@@ -156,7 +175,7 @@ release, and creating a tag locally does not trigger Actions until it is pushed.
 ### Publish a version
 
 Update the version in `package.json`, `src-tauri/Cargo.toml`,
-`src-tauri/tauri.conf.json`, and `packaging/arch/PKGBUILD`. Keep the corresponding
+and `src-tauri/tauri.conf.json`. Keep the corresponding
 lock files consistent, and commit those changes. Then push an unused matching tag;
 for example, after updating to `0.1.2`:
 
@@ -174,8 +193,9 @@ schema rejection, history pagination, and persistence on both operating systems.
 Actions are pinned to commit IDs. Published releases cannot be overwritten by
 a rerun; use a new version tag. Releases include `SHA256SUMS` for the packages.
 
-Windows code signing and pacman package signing are not configured. Those
-require real signing credentials and workflow integration. See
+Windows code signing is not configured. That
+requires real signing credentials and workflow integration (Linux `~/.local`
+installs need no signing). See
 [the release guide](docs/RELEASING.md) for maintainer details. Dependabot is
 configured to check npm, Rust, and GitHub Actions dependencies weekly.
 
