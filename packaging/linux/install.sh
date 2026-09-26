@@ -100,14 +100,19 @@ for src in "${binaries[@]}"; do
   installed_bins+=("$BINDIR/$base")
 done
 
-# Install desktop entries, rewriting absolute /usr/bin Exec/TryExec paths
-# produced for system packages to the user prefix.
+# Install desktop entries. Tauri emits either an absolute system path
+# (Exec=/usr/bin/<app>) or a bare binary name (Exec=<app>); both are
+# rewritten to the user prefix so the menu entry launches the installed
+# app even when ~/.local/bin is not on PATH.
 installed_desktops=()
+app_bin="$(basename "${installed_bins[0]}")"
 for src in "${desktops[@]}"; do
   base="$(basename "$src")"
   dest="$APPSDIR/$base"
-  sed -e "s#^Exec=/usr/bin/#Exec=$BINDIR/#" \
+  sed -E -e "s#^Exec=/usr/bin/#Exec=$BINDIR/#" \
       -e "s#^TryExec=/usr/bin/#TryExec=$BINDIR/#" \
+      -e "s#^Exec=${app_bin}([[:space:]].*)?\$#Exec=$BINDIR/$app_bin\1#" \
+      -e "s#^TryExec=${app_bin}\$#TryExec=$BINDIR/$app_bin#" \
       "$src" > "$dest.tmp"
   chmod 644 "$dest.tmp"
   mv "$dest.tmp" "$dest"
