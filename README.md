@@ -22,8 +22,8 @@ formats are not configured.
 | --- | --- |
 | `Colemak-DH.Tutor_<version>_x64-setup.exe` | Windows installer |
 | `colemak-dh-tutor-<version>-x86_64.tar.zst` | Linux `~/.local` tarball with `install.sh` |
-| `Colemak-DH.Tutor_<version>_aarch64.dmg` | macOS installer for Apple Silicon (M1 and later) |
-| `Colemak-DH.Tutor_<version>_x86_64.dmg` | macOS installer for Intel Macs |
+| `Colemak-DH Tutor_<version>_aarch64.dmg` | macOS installer for Apple Silicon (M1 and later) |
+| `Colemak-DH Tutor_<version>_x64.dmg` | macOS installer for Intel Macs |
 
 The automatically generated **Source code** archives contain project sources,
 not installers. Installed users do not need development tools. The current
@@ -74,7 +74,7 @@ repository; GitHub Releases is the distribution path. The previous
 ### macOS (Apple Silicon and Intel)
 
 Download the `.dmg` matching your Mac — `aarch64` for Apple Silicon (M1 and
-later), `x86_64` for Intel — then open it and drag **Colemak-DH Tutor** to
+later), `x64` for Intel — then open it and drag **Colemak-DH Tutor** to
 **Applications**. Launch the app from Applications or Spotlight.
 
 The current DMGs are ad-hoc signed, not notarized. On first launch Gatekeeper

@@ -43,7 +43,8 @@ target per Apple architecture (no universal binary):
 
 Each leg runs `npm run tauri build -- --bundles dmg --target <triple>` and
 uploads `src-tauri/target/<triple>/release/bundle/dmg/*.dmg`. Tauri embeds the
-architecture in the DMG filename, so release assets are self-labeling. The
+architecture in the DMG filename (`Colemak-DH Tutor_<version>_aarch64.dmg`,
+`Colemak-DH Tutor_<version>_x64.dmg`), so release assets are self-labeling. The
 per-arch choice (rather than one universal DMG) keeps asset names unambiguous
 and matches Tauri's documented GitHub pipeline; a universal binary can be
 revisited later if Intel support is ever dropped.
