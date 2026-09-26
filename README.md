@@ -14,13 +14,16 @@ progress history. No account or cloud database is required.
 
 Open [GitHub Releases](https://github.com/exolithelabs/colemak-dh-tutor/releases),
 choose a version, and expand **Assets**. The published packages are currently
-unsigned prereleases for testing. Windows and Linux x86-64 builds are
-available; macOS, ARM, and other Linux package formats are not configured.
+unsigned prereleases for testing. Windows (x64), Linux (x86-64), and macOS
+(Apple Silicon and Intel) builds are available; ARM Linux and other package
+formats are not configured.
 
 | Download | Purpose |
 | --- | --- |
 | `Colemak-DH.Tutor_<version>_x64-setup.exe` | Windows installer |
 | `colemak-dh-tutor-<version>-x86_64.tar.zst` | Linux `~/.local` tarball with `install.sh` |
+| `Colemak-DH.Tutor_<version>_aarch64.dmg` | macOS installer for Apple Silicon (M1 and later) |
+| `Colemak-DH.Tutor_<version>_x86_64.dmg` | macOS installer for Intel Macs |
 
 The automatically generated **Source code** archives contain project sources,
 not installers. Installed users do not need development tools. The current
@@ -68,6 +71,18 @@ repository; GitHub Releases is the distribution path. The previous
 `.pkg.tar.zst` pacman artifact was removed in favor of this tarball (see
 `docs/RELEASING.md`).
 
+### macOS (Apple Silicon and Intel)
+
+Download the `.dmg` matching your Mac — `aarch64` for Apple Silicon (M1 and
+later), `x86_64` for Intel — then open it and drag **Colemak-DH Tutor** to
+**Applications**. Launch the app from Applications or Spotlight.
+
+The current DMGs are ad-hoc signed, not notarized. On first launch Gatekeeper
+may block the app; if so, right-click (Control-click) it, choose **Open**, and
+confirm, or allow it under System Settings → Privacy & Security. A Developer
+ID signature with notarization is planned before the first public macOS
+release (see `docs/RELEASING.md`).
+
 ## Using the app
 
 1. Enable Colemak-DH in your operating system's keyboard settings. The tutor
@@ -106,6 +121,7 @@ Typical database paths for the application ID
 | --- | --- |
 | Windows | `%APPDATA%\io.github.exolithelabs.ColemakDHTutor\colemak.db` |
 | Linux | `$XDG_DATA_HOME/io.github.exolithelabs.ColemakDHTutor/colemak.db`, defaulting to `~/.local/share/io.github.exolithelabs.ColemakDHTutor/colemak.db` |
+| macOS | `~/Library/Application Support/io.github.exolithelabs.ColemakDHTutor/colemak.db` |
 
 Tauri resolves the exact path from the OS environment. The webview also stores
 small UI preferences, such as the selected lesson, in its local storage. Those
@@ -163,9 +179,9 @@ does not depend on this machine's build output.
 
 | Trigger | Result |
 | --- | --- |
-| Pull request | Windows and Linux tests/builds; Actions artifacts |
-| Push to `master` | Windows and Linux tests/builds; Actions artifacts |
-| Push a `v*` tag | Both builds, followed by a published GitHub prerelease with downloads |
+| Pull request | Windows, Linux, and macOS tests/builds; Actions artifacts |
+| Push to `master` | Windows, Linux, and macOS tests/builds; Actions artifacts |
+| Push a `v*` tag | All builds, followed by a published GitHub prerelease with downloads |
 | Manual **Run workflow** | Builds for the selected ref; publication only when the ref is a `v*` tag |
 
 Actions artifacts are retained for 14 days. Release assets are attached separately
@@ -184,18 +200,20 @@ git tag v0.1.2
 git push origin master v0.1.2
 ```
 
-After both platform jobs pass, GitHub Actions attaches the packages and publishes
+After all platform jobs pass, GitHub Actions attaches the packages and publishes
 the prerelease automatically. The release job uses GitHub's automatic token;
 no custom secrets are needed for the current unsigned builds. The workflow
 checks that version files and tags agree, runs frontend regression tests and
 JavaScript dependency audits, and tests the native Rust backend's validation,
-schema rejection, history pagination, and persistence on both operating systems.
+schema rejection, history pagination, and persistence on every operating system.
 Actions are pinned to commit IDs. Published releases cannot be overwritten by
 a rerun; use a new version tag. Releases include `SHA256SUMS` for the packages.
 
 Windows code signing is not configured. That
 requires real signing credentials and workflow integration (Linux `~/.local`
-installs need no signing). See
+installs need no signing). macOS DMGs currently use ad-hoc signing only;
+a Developer ID certificate with notarization is required before calling any
+macOS build a public release. See
 [the release guide](docs/RELEASING.md) for maintainer details. Dependabot is
 configured to check npm, Rust, and GitHub Actions dependencies weekly.
 
@@ -223,6 +241,17 @@ npm ci
 npm --prefix frontend ci
 npm run tauri dev
 ```
+
+### macOS preview
+
+```bash
+npm ci
+npm --prefix frontend ci
+npm run tauri dev
+```
+
+Requires Xcode command-line tools. To produce a local DMG instead of a dev
+preview, see the macOS notes in [the release guide](docs/RELEASING.md).
 
 The frontend calls Tauri commands to connect to the local backend; running Vite
 alone in a browser is not a complete desktop-app preview. Development launches
