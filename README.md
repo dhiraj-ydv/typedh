@@ -1,6 +1,6 @@
 # Colemak-DH Tutor
 
-[Downloads](#downloads-and-installation) · [Usage](#using-the-app) · [User data](#user-data-and-privacy) · [Architecture](#architecture) · [GitHub workflow](#github-builds-and-releases) · [Flatpak hosting](#hosting-a-flatpak-repository) · [Development](#development) · [Support](#support-and-security) · [License](#license)
+[Downloads](#downloads-and-installation) · [Usage](#using-the-app) · [User data](#user-data-and-privacy) · [Architecture](#architecture) · [GitHub workflow](#github-builds-and-releases) · [Development](#development) · [Support](#support-and-security) · [License](#license)
 
 A desktop touch-typing tutor for the Colemak-DH keyboard layout, with progressive
 lessons, live keyboard and finger guidance, custom text practice, and local
@@ -14,14 +14,13 @@ progress history. No account or cloud database is required.
 
 Open [GitHub Releases](https://github.com/exolithelabs/colemak-dh-tutor/releases),
 choose a version, and expand **Assets**. The published packages are currently
-unsigned prereleases for testing. Windows and Linux x86-64 builds are available;
-macOS and ARM installers are not configured.
+unsigned prereleases for testing. Windows and Arch Linux x86-64 builds are
+available; macOS, ARM, and other Linux package formats are not configured.
 
 | Download | Purpose |
 | --- | --- |
 | `Colemak-DH.Tutor_<version>_x64-setup.exe` | Windows installer |
-| `Colemak-DH-Tutor-x86_64.flatpak` | Linux application bundle |
-| `Colemak-DH-Tutor-flatpak-repo.tar.gz` | Flatpak repository archive for maintainers |
+| `colemak-dh-tutor-<version>-1-x86_64.pkg.tar.zst` | Arch Linux / pacman package |
 
 The automatically generated **Source code** archives contain project sources,
 not installers. Installed users do not need development tools. The current
@@ -36,21 +35,19 @@ Download and run the `.exe` installer, then launch **Colemak-DH Tutor** from the
 Start menu. Installation is configured for the current Windows user. The unsigned
 installer may show an unknown-publisher warning.
 
-### Linux
+### Linux (Arch / pacman)
 
-Install Flatpak through your distribution first. From the directory containing
-the downloaded bundle, run:
+Download the `.pkg.tar.zst` package, then install it with pacman from the
+directory containing the file:
 
 ```bash
-flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-flatpak install --user flathub org.gnome.Platform//50
-flatpak install --user ./Colemak-DH-Tutor-x86_64.flatpak
-flatpak run io.github.exolithelabs.ColemakDHTutor
+sudo pacman -U ./colemak-dh-tutor-<version>-1-x86_64.pkg.tar.zst
 ```
 
-The bundle requires the GNOME 50 runtime; bundles do not include runtime
-dependencies. See the [Flatpak bundle documentation](https://docs.flatpak.org/en/latest/single-file-bundles.html).
-This app is not currently deployed to a configured Flatpak remote by the workflow.
+Launch **Colemak-DH Tutor** from your application menu, or run
+`colemak-dh-tutor` from a terminal. Pacman installs the runtime libraries the
+package declares. This release path is for Arch Linux and compatible pacman
+distributions; it is not published to the AUR or an official Arch repository.
 
 ## Using the app
 
@@ -89,8 +86,7 @@ Typical database paths for the application ID
 | Environment | Database location |
 | --- | --- |
 | Windows | `%APPDATA%\io.github.exolithelabs.ColemakDHTutor\colemak.db` |
-| Linux outside Flatpak | `$XDG_DATA_HOME/io.github.exolithelabs.ColemakDHTutor/colemak.db`, defaulting to `~/.local/share/io.github.exolithelabs.ColemakDHTutor/colemak.db` |
-| Linux Flatpak | Under `~/.var/app/io.github.exolithelabs.ColemakDHTutor/data/`, in the app-ID subdirectory |
+| Linux | `$XDG_DATA_HOME/io.github.exolithelabs.ColemakDHTutor/colemak.db`, defaulting to `~/.local/share/io.github.exolithelabs.ColemakDHTutor/colemak.db` |
 
 Tauri resolves the exact path from the OS environment. The webview also stores
 small UI preferences, such as the selected lesson, in its local storage. Those
@@ -134,7 +130,7 @@ Project layout:
 frontend/           Vue interface
 src-tauri/          Rust commands, SQLite backend, tests, and desktop configuration
 scripts/            Release version checks
-packaging/flatpak/  Flatpak manifest, metadata, and packaging script
+packaging/arch/     Arch Linux PKGBUILD and packaging script
 .github/            Build/release workflow and Dependabot configuration
 docs/               Additional maintainer documentation
 ```
@@ -160,8 +156,8 @@ release, and creating a tag locally does not trigger Actions until it is pushed.
 ### Publish a version
 
 Update the version in `package.json`, `src-tauri/Cargo.toml`,
-`src-tauri/tauri.conf.json`, and the Flatpak metainfo. Keep the corresponding lock
-files consistent, and commit those changes. Then push an unused matching tag;
+`src-tauri/tauri.conf.json`, and `packaging/arch/PKGBUILD`. Keep the corresponding
+lock files consistent, and commit those changes. Then push an unused matching tag;
 for example, after updating to `0.1.2`:
 
 ```bash
@@ -178,26 +174,10 @@ schema rejection, history pagination, and persistence on both operating systems.
 Actions are pinned to commit IDs. Published releases cannot be overwritten by
 a rerun; use a new version tag. Releases include `SHA256SUMS` for the packages.
 
-Windows code signing and Flatpak repository signing are not configured. Those
+Windows code signing and pacman package signing are not configured. Those
 require real signing credentials and workflow integration. See
 [the release guide](docs/RELEASING.md) for maintainer details. Dependabot is
 configured to check npm, Rust, and GitHub Actions dependencies weekly.
-
-## Hosting a Flatpak repository
-
-GitHub Releases provides a direct `.flatpak` download and an OSTree repository
-archive. Publishing a release does not deploy either file to your own Flatpak
-host or submit the app to Flathub.
-
-For a new repository, extract `Colemak-DH-Tutor-flatpak-repo.tar.gz` and serve the
-contents of its `flatpak-repo/` directory from your chosen HTTPS endpoint. For an
-existing repository, import the new bundle into that repository and regenerate
-its metadata; do not replace a shared repository with this standalone archive.
-
-Repository signing, a `.flatpakrepo` descriptor, and automated deployment still
-need a hosting destination and signing-key configuration. Until that is set up,
-use the direct bundle from Releases. The Flatpak branch in the current packaging
-script is `stable`; this is independent of GitHub's prerelease label.
 
 ## Development
 

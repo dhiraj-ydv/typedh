@@ -81,18 +81,18 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-  linux-flatpak:
-    name: Linux Flatpak repository
+  linux-arch:
+    name: Linux Arch package
     runs-on: ubuntu-24.04
     needs: quality
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Install Linux build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf flatpak flatpak-builder
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
@@ -114,16 +114,14 @@ jobs:
 
       - name: Build icons and Debian staging package
         run: |
-          chmod +x packaging/flatpak/build-flatpak.sh
+          chmod +x packaging/arch/build-pkg.sh
           npm run tauri icon frontend/public/favicon.svg
           npm run tauri build -- --bundles deb
 
-      - name: Build Flatpak bundle and repository
+      - name: Build Arch package
         run: |
-          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-          flatpak install --user -y flathub org.gnome.Platform//50 org.gnome.Sdk//50
           deb_path=$(find src-tauri/target/release/bundle/deb -name '*.deb' -print -quit)
-          ./packaging/flatpak/build-flatpak.sh "$deb_path"
+          ./packaging/arch/build-pkg.sh "$deb_path"
 
       - name: Test native backend and persistence
         run: cargo test --locked --manifest-path src-tauri/Cargo.toml --lib
@@ -131,9 +129,7 @@ jobs:
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: Colemak-DH-Tutor-Linux-x86_64
-          path: |
-            dist/Colemak-DH-Tutor-x86_64.flatpak
-            dist/Colemak-DH-Tutor-flatpak-repo.tar.gz
+          path: dist/colemak-dh-tutor-*-x86_64.pkg.tar.zst
           if-no-files-found: error
           retention-days: 14
 
@@ -142,7 +138,7 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v')
     needs:
       - windows-installer
-      - linux-flatpak
+      - linux-arch
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -162,8 +158,9 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           mapfile -d '' files < <(find release-artifacts -type f -print0)
-          if [[ ${#files[@]} -ne 3 ]]; then
-            echo "Expected Windows installer, Flatpak bundle, and repository archive" >&2
+          if [[ ${#files[@]} -ne 2 ]]; then
+            echo "Expected Windows installer and Arch package" >&2
+            find release-artifacts -type f >&2 || true
             exit 1
           fi
 

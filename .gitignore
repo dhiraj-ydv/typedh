@@ -19,7 +19,6 @@ instance/
 *.pem
 .venv/
 __pycache__/
-.flatpak-builder/
 *.db-journal
 *.sqlite-wal
 *.sqlite-shm
@@ -42,10 +41,8 @@ src-tauri/binaries/*
 
 # Local application control/build artifacts
 *.trigger
-flatpak-build/
-flatpak-repo/
-*.flatpak
-packaging/flatpak/input/
+packaging/arch/work/
+*.pkg.tar.zst
 dist/
 
 # IDEs

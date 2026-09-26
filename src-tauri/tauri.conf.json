@@ -27,7 +27,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["nsis", "deb"],
+    "targets": ["nsis"],
     "publisher": "Exolithe Labs",
     "copyright": "Copyright 2026 Exolithe Labs",
     "category": "Education",

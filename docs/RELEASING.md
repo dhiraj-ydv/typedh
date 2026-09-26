@@ -5,10 +5,8 @@
 The **Desktop build** workflow runs on pull requests, pushes to `master`, version
 tags, and manual dispatches. It produces:
 
-- an unsigned Windows NSIS `.exe` installer;
-- a Linux `.flatpak` bundle for direct testing; and
-- `Colemak-DH-Tutor-flatpak-repo.tar.gz`, an OSTree repository ready to upload
-  to your static Flatpak host.
+- an unsigned Windows NSIS `.exe` installer; and
+- an Arch Linux / pacman `.pkg.tar.zst` package for x86-64.
 
 Ordinary builds retain these as workflow artifacts for 14 days. Pushing a
 version tag publishes a GitHub prerelease and attaches the packaged
@@ -23,11 +21,16 @@ part of the build. Published assets
 include a `SHA256SUMS` file. An already published release cannot be overwritten
 by rerunning the workflow; create a new version instead.
 
+The Linux job builds a temporary Debian staging package with Tauri, then runs
+`packaging/arch/build-pkg.sh` inside an Arch Linux container to produce the
+pacman package. The `.deb` itself is not published.
+
 ## Creating a release candidate
 
 Ensure the version matches in `package.json`, `src-tauri/Cargo.toml`,
-`src-tauri/tauri.conf.json`, their lockfiles, and the Flatpak metainfo, then push
-the commit and a matching unused version tag (for example, after bumping to 0.1.2):
+`src-tauri/tauri.conf.json`, their lockfiles, and `packaging/arch/PKGBUILD`, then
+push the commit and a matching unused version tag (for example, after bumping to
+0.1.2):
 
 ```bash
 git tag v0.1.2
@@ -44,21 +47,17 @@ to a stable release.
 2. Acquire a Windows Authenticode certificate and configure Tauri signing.
    Unsigned installers work, but Windows will show an unverified-publisher
    warning. Do not put a certificate or password in the repository.
-3. Choose the final HTTPS URL for the Flatpak repository.
-4. Upload the extracted contents of the Flatpak repository archive to that URL.
-5. Publish a `.flatpakrepo` descriptor containing the final URL and the
-   repository's GPG key. Repository signing is intentionally not enabled until
-   that key exists; keep the private key only in GitHub Actions secrets.
-6. Enable GitHub private vulnerability reporting before making the repository
+3. Decide whether Arch packages should be signed with a pacman keyring and, if
+   so, configure signing in the workflow with secrets kept out of the repository.
+4. Enable GitHub private vulnerability reporting before making the repository
    public.
 
-Users can test the unsigned bundle artifact directly with:
+Users can install the Arch package with:
 
 ```bash
-flatpak install --user ./Colemak-DH-Tutor-x86_64.flatpak
-flatpak run io.github.exolithelabs.ColemakDHTutor
+sudo pacman -U ./colemak-dh-tutor-<version>-1-x86_64.pkg.tar.zst
 ```
 
 The generated prerelease is suitable for testing. Do not promote it to a
-public production release until the signing identities and Flatpak hosting URL
-are final. Those values cannot be safely guessed in source control.
+public production release until signing identities are final. Those values
+cannot be safely guessed in source control.
