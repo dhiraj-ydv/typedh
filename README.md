@@ -212,13 +212,22 @@ automatically, and loading/save failures are shown in the interface.
 Project layout:
 
 ```text
-frontend/           Vue interface
+frontend/           Vue interface (own npm project: frontend/package.json)
 src-tauri/          Rust commands, SQLite backend, tests, and desktop configuration
 scripts/            Release version checks and the updater manifest builder
 packaging/arch/     Arch Linux PKGBUILD and packaging script (pacman .pkg.tar.zst)
 .github/            Build/release workflow and Dependabot configuration
-docs/               Additional maintainer documentation
+docs/               Additional maintainer documentation (docs/RELEASING.md)
+package.json        Root npm project: Tauri CLI plus the version source of truth
 ```
+
+Two npm manifests are intentional and cannot be consolidated: Tauri builds the
+frontend as a separate project (`beforeBuildCommand: npm --prefix frontend run
+build`, `frontendDist: ../frontend/dist` in `src-tauri/tauri.conf.json`), and
+CI installs/caches/audits both (`npm ci` plus `npm --prefix frontend ci`).
+Keep `package.json` / `package-lock.json` and `frontend/package.json` /
+`frontend/package-lock.json` in sync; the release check fails the build when
+versions disagree.
 
 ## GitHub builds and releases
 
