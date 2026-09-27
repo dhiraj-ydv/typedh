@@ -152,6 +152,10 @@ rejected before any file is replaced.
   attaches it with the installers. Missing payloads fail the job; missing
   signatures warn and ship empty (clients reject them). The script's
   `--self-test` runs in CI on every build.
+- Builds without the secret (forks, Dependabot) stay green via
+  `scripts/ensure-updater-config.mjs`, which strips the updater section for
+  an unsigned validation build. Those artifacts cannot self-update; every
+  same-repo build and all releases stay fully signed.
 
 ### Verifying an update locally
 

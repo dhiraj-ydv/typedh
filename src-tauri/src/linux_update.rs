@@ -192,13 +192,17 @@ pub fn rewrite_desktop_exec(contents: &str, bindir: &Path, app_bin: &str) -> Str
 
 /// Verify tarball bytes against a minisign signature text (the `.sig` file
 /// content, as embedded in `latest.json`). Anything else is rejected.
+///
+/// `allow_legacy` is true so both signature modes verify: `tauri signer`
+/// artifacts may be standard or pre-hashed Ed25519 minisign signatures, and
+/// both are equally trustworthy here.
 pub fn verify_signature(data: &[u8], signature_text: &str) -> Result<(), String> {
     let public_key = minisign_verify::PublicKey::from_base64(UPDATE_PUBKEY_BASE64)
         .map_err(|_| "Updater public key is invalid. The app installation may be damaged.".to_string())?;
     let signature = minisign_verify::Signature::decode(signature_text)
         .map_err(|_| "Update signature is malformed. The update was blocked.".to_string())?;
     public_key
-        .verify(data, &signature, false)
+        .verify(data, &signature, true)
         .map_err(|_| "Update signature did not verify. The update was blocked.".to_string())
 }
 
@@ -487,8 +491,14 @@ mod tests {
         let config = include_str!("../tauri.conf.json");
         let parsed: serde_json::Value =
             serde_json::from_str(config).expect("tauri.conf.json must parse");
-        let configured = parsed
-            .pointer("/plugins/updater/pubkey")
+        // Unsigned validation builds (forks, Dependabot) strip the updater
+        // section; see scripts/ensure-updater-config.mjs. Nothing to compare
+        // there — secret-having builds always run the full check below.
+        let Some(updater) = parsed.pointer("/plugins/updater") else {
+            return;
+        };
+        let configured = updater
+            .pointer("/pubkey")
             .and_then(|value| value.as_str())
             .expect("plugins.updater.pubkey must be set");
         // Tauri stores the whole base64-encoded .pub file here; the backend
@@ -554,12 +564,23 @@ mod tests {
         )));
     }
 
+    #[cfg(unix)]
     #[test]
     fn system_prefixes_are_refused() {
         assert!(check_prefix_eligible(Path::new("/usr")).is_err());
         assert!(check_prefix_eligible(Path::new("/")).is_err());
         assert!(check_prefix_eligible(Path::new("/home/u/.local")).is_ok());
         assert!(check_prefix_eligible(Path::new("/tmp/prefix")).is_ok());
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn system_prefixes_are_refused() {
+        // `/usr` has no meaning on Windows; refusal is about absoluteness
+        // there, while real eligibility is decided on Linux at runtime.
+        assert!(check_prefix_eligible(Path::new("/usr")).is_err());
+        assert!(check_prefix_eligible(Path::new("relative/prefix")).is_err());
+        assert!(check_prefix_eligible(Path::new("C:\\Users\\u\\.local")).is_ok());
     }
 
     #[test]
@@ -629,15 +650,18 @@ mod tests {
             let mut raw = vec![b'E', b'd'];
             raw.extend_from_slice(&KEYNUM);
             raw.extend_from_slice(&sig);
+            // The global signature covers the file signature followed by the
+            // trusted comment text (without its "trusted comment: " prefix),
+            // exactly as minisign produces it.
             let trusted = "timestamp:1700000000\tfile:fixture.bin";
-            let global = key.sign(trusted.as_bytes()).to_bytes();
-            let mut global_raw = vec![b'E', b'd'];
-            global_raw.extend_from_slice(&KEYNUM);
-            global_raw.extend_from_slice(&global);
+            let mut global_input = Vec::with_capacity(sig.len() + trusted.len());
+            global_input.extend_from_slice(&sig);
+            global_input.extend_from_slice(trusted.as_bytes());
+            let global = key.sign(&global_input).to_bytes();
             format!(
                 "untrusted comment: test signature\n{}\ntrusted comment: {trusted}\n{}\n",
                 BASE64.encode(raw),
-                BASE64.encode(global_raw)
+                BASE64.encode(global)
             )
         }
 
@@ -647,7 +671,7 @@ mod tests {
             let signature = minisign_verify::Signature::decode(sig_text)
                 .map_err(|error| format!("fixture signature invalid: {error}"))?;
             public_key
-                .verify(data, &signature, false)
+                .verify(data, &signature, true)
                 .map_err(|error| format!("verify failed: {error}"))
         }
 
