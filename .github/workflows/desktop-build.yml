@@ -131,6 +131,8 @@ jobs:
         run: node scripts/ensure-updater-config.mjs
 
       - name: Build icons and Debian staging package
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
         run: |
           chmod +x packaging/arch/build-pkg.sh
           npm run tauri icon frontend/public/favicon.svg
