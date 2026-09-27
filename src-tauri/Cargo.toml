@@ -15,9 +15,22 @@ tauri-build = { version = "2", features = [] }
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }
+serde_json = "1"
 tauri = { version = "2", features = [] }
+tauri-plugin-updater = "2"
 rusqlite = { version = "0.40.2", features = ["bundled"] }
+# Linux ~/.local self-update: HTTPS download, minisign verification,
+# and tar.zst extraction (all verify-then-write; see linux_update.rs).
+minisign-verify = "0.3"
+ureq = "2"
+tar = "0.4"
+zstd = "0.13"
+tempfile = "3"
 
 [dev-dependencies]
 tempfile = "3"
 serde_json = "1"
+# Hermetic updater-signature fixtures: real Ed25519 in minisign format,
+# generated in-test from a fixed seed (no secret keys in the repo).
+ed25519-dalek = "2"
+base64 = "0.22"

@@ -28,6 +28,7 @@
   "bundle": {
     "active": true,
     "targets": ["nsis"],
+    "createUpdaterArtifacts": true,
     "publisher": "Exolithe Labs",
     "copyright": "Copyright 2026 Exolithe Labs",
     "category": "Education",
@@ -49,6 +50,14 @@
     },
     "macOS": {
       "signingIdentity": "-"
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "RWSCdzIGCe3FZVct7rUWtYpkiT3vPgxjmPw/Ls3GUJvmRO5NMTa3m/Xz",
+      "endpoints": [
+        "https://github.com/exolithelabs/colemak-dh-tutor/releases/latest/download/latest.json"
+      ]
     }
   }
 }

@@ -5,16 +5,19 @@
 The **Desktop build** workflow runs on pull requests, pushes to `master`, version
 tags, and manual dispatches. It produces:
 
-- an unsigned Windows NSIS `.exe` installer;
-- a Linux x86-64 `~/.local` tarball (`.tar.zst`) containing the app plus
-  `install.sh` and `uninstall.sh`; and
-- two macOS `.dmg` installers: `aarch64` (Apple Silicon) and `x86_64` (Intel).
+- an unsigned Windows NSIS `.exe` installer (plus its updater `.sig`);
+- a Linux x86-64 `~/.local` tarball (`.tar.zst` plus a detached `.sig`) containing
+  the app plus `install.sh` and `uninstall.sh`; and
+- two macOS `.dmg` installers: `aarch64` (Apple Silicon) and `x86_64` (Intel),
+  plus per-arch `.app.tar.gz` updater archives with `.sig` files.
 
-Ordinary builds retain these as workflow artifacts for 14 days (four artifacts
-in total: Windows, Linux, and two macOS DMGs). Pushing a
+Ordinary builds retain these as workflow artifacts for 14 days (Windows,
+Linux, and two macOS artifacts). Pushing a
 version tag publishes a GitHub prerelease and attaches the packaged
-applications. This uses the automatic per-run `GITHUB_TOKEN`; no personal access
-token or custom secret is required.
+applications together with `latest.json` (the signed updater manifest) and a
+`SHA256SUMS` file. This uses the automatic per-run `GITHUB_TOKEN` plus the
+`TAURI_SIGNING_PRIVATE_KEY` repository secret for update signatures; no
+personal access token is required.
 
 Before packaging, CI validates matching application versions, runs frontend
 regression tests, and audits JavaScript dependencies. Every platform job compiles
@@ -41,8 +44,9 @@ target per Apple architecture (no universal binary):
 | `aarch64` | `aarch64-apple-darwin` | Apple Silicon (M1 and later), built natively | `Colemak-DH-Tutor-macOS-aarch64` |
 | `x86_64` | `x86_64-apple-darwin` | Intel Macs, cross-compiled on the same runner | `Colemak-DH-Tutor-macOS-x86_64` |
 
-Each leg runs `npm run tauri build -- --bundles dmg --target <triple>` and
-uploads `src-tauri/target/<triple>/release/bundle/dmg/*.dmg`. Tauri embeds the
+Each leg runs `npm run tauri build -- --bundles app,dmg --target <triple>` and
+uploads the `.dmg` plus `src-tauri/target/<triple>/release/bundle/macos/*.app.tar.gz`
+(the stock updater payload, with `.sig` files when the signing secret is set). Tauri embeds the
 architecture in the DMG filename (`Colemak-DH Tutor_<version>_aarch64.dmg`,
 `Colemak-DH Tutor_<version>_x64.dmg`), so release assets are self-labeling. The
 per-arch choice (rather than one universal DMG) keeps asset names unambiguous
@@ -103,8 +107,63 @@ tarball became primary (issue #10). Rationale:
 - one Linux artifact keeps version sync, CI time, and docs simpler.
 
 There is no pacman/AUR/Flatpak/AppImage publication path in this workflow.
-A separate issue is needed to add `uninstall.sh` coverage beyond the bundled
-script or an in-app updater for Windows + `~/.local` Linux.
+System-wide installs (for example `/usr` via pacman) are intentionally excluded
+from in-app updates; only user-owned `~/.local` installs self-update (see
+"In-app updates" below).
+
+## In-app updates
+
+The app's **Updates** view checks
+`https://github.com/exolithelabs/colemak-dh-tutor/releases/latest/download/latest.json`
+for a newer signed release. Windows and macOS use the stock Tauri updater
+(installer / `.app.tar.gz` payloads); Linux `~/.local` installs use a backend
+flow (`src-tauri/src/linux_update.rs`) that downloads the release tarball,
+verifies its minisign signature against the same updater public key, extracts
+it over the install prefix, and restarts. Unsigned or tampered payloads are
+rejected before any file is replaced.
+
+### Keys and secrets
+
+- The updater keypair was generated with `tauri signer generate` (passwordless).
+- The public key is committed in two places that must agree (enforced by the
+  `pubkey_matches_config` Rust test): `plugins.updater.pubkey` in
+  `src-tauri/tauri.conf.json` and `UPDATE_PUBKEY_BASE64` in
+  `src-tauri/src/linux_update.rs`.
+- The private key lives only in the `TAURI_SIGNING_PRIVATE_KEY` repository
+  secret and in one offline backup. If it is lost, installed apps can never
+  accept another auto-update — back it up before you need it. Never commit it.
+- To rotate keys you must ship the new public key inside an update signed by
+  the old key; plan rotation as its own release.
+
+### How CI signs
+
+- `bundle.createUpdaterArtifacts` is `true`, so every Tauri build emits
+  updater payloads alongside the installers.
+- The Windows and macOS build steps export `TAURI_SIGNING_PRIVATE_KEY` from
+  secrets, so the bundler writes `.sig` files next to the payloads. Without
+  the secret the build still succeeds but unsigned (clients reject those
+  updates).
+- The Linux job signs the tarball after packing it:
+  `tauri signer sign` with the key from the environment, writing
+  `dist/colemak-dh-tutor-<version>-x86_64.tar.zst.sig`.
+- On `v*` tags the release job runs `scripts/build-updater-manifest.mjs`,
+  which pairs each payload with its `.sig` content into `latest.json`
+  (`windows-x86_64`, `darwin-aarch64`, `darwin-x86_64`, `linux-x86_64`) and
+  attaches it with the installers. Missing payloads fail the job; missing
+  signatures warn and ship empty (clients reject them). The script's
+  `--self-test` runs in CI on every build.
+
+### Verifying an update locally
+
+1. After a tag release, fetch
+   `https://github.com/exolithelabs/colemak-dh-tutor/releases/latest/download/latest.json`
+   and confirm all four platform entries have non-empty `signature` fields.
+2. Confirm each `url` downloads and its bytes match `SHA256SUMS`.
+3. End-to-end: install build N, push a new version tag, then use the app's
+   **Updates** view to move to N+1 and confirm the version and progress
+   survive. On Linux, confirm `~/.local/bin`, the desktop entry
+   (`Exec=` pointing at the prefix), and icons were replaced; on Windows,
+   confirm the installer flow and relaunch.
 
 ## Creating a release candidate
 
@@ -119,13 +178,16 @@ git push origin master v0.1.2
 ```
 
 After all platform jobs pass, the workflow publishes the prerelease with its
-downloadable assets. Install-test these unsigned builds before promoting them
-to a stable release.
+downloadable assets. Install-test these builds (including an N → N+1 in-app
+update where possible) before promoting them to a stable release.
 
 ## Before the first public release
 
 1. Review and install all CI artifacts on clean virtual machines (Windows,
    Linux, and both macOS architectures).
+2. Confirm `latest.json` on a tag release carries signatures for all four
+   platforms, and that the Updates view moves an installed build forward.
+3. Back up the `TAURI_SIGNING_PRIVATE_KEY` offline, outside the repository.
 2. Acquire a Windows Authenticode certificate and configure Tauri signing.
    Unsigned installers work, but Windows will show an unverified-publisher
    warning. Do not put a certificate or password in the repository.

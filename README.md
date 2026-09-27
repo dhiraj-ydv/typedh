@@ -83,6 +83,21 @@ confirm, or allow it under System Settings → Privacy & Security. A Developer
 ID signature with notarization is planned before the first public macOS
 release (see `docs/RELEASING.md`).
 
+### Updating
+
+Open the menu and choose **Updates**, then **Check for updates**. When a newer
+signed release exists, the app downloads it, verifies its signature, and
+installs it; unsigned or tampered payloads are rejected. Your lessons and
+progress are kept.
+
+- **Windows**: the installer runs and the app closes while it finishes —
+  reopen the app if it does not restart by itself.
+- **Linux `~/.local` installs**: the binary, desktop entry, and icons under
+  your install prefix are replaced in place; restart from the app afterwards.
+- **System-wide Linux installs** (for example `/usr` via pacman) cannot
+  self-update; use your package manager instead.
+- **macOS**: updates through the same signed flow as Windows.
+
 ## Using the app
 
 1. Enable Colemak-DH in your operating system's keyboard settings. The tutor
@@ -154,7 +169,10 @@ History loads newest first in pages of 100 results.
 The frontend invokes `get_lessons`, `get_progress`, and `save_progress` directly
 through Tauri. Rust serializes database access on a background worker and validates
 the command payloads; the webview cannot submit SQL or choose database paths.
-There are no HTTP requests, CORS configuration, API tokens, or shell plugin.
+The only network use is the update flow: fetching the signed release manifest
+and update payloads from GitHub Releases, verified against the updater public
+key before installing. There is no other HTTP traffic, CORS configuration, API
+tokens, or shell plugin.
 SQLite retains WAL mode, full synchronization, foreign keys, and a write timeout.
 Failed database opens can be retried from the UI. Writes are never retried
 automatically, and loading/save failures are shown in the interface.
@@ -164,7 +182,7 @@ Project layout:
 ```text
 frontend/           Vue interface
 src-tauri/          Rust commands, SQLite backend, tests, and desktop configuration
-scripts/            Release version checks
+scripts/            Release version checks and the updater manifest builder
 packaging/linux/    Linux ~/.local tarball scripts (build-tarball, install, uninstall)
 .github/            Build/release workflow and Dependabot configuration
 docs/               Additional maintainer documentation
@@ -202,7 +220,8 @@ git push origin master v0.1.2
 
 After all platform jobs pass, GitHub Actions attaches the packages and publishes
 the prerelease automatically. The release job uses GitHub's automatic token;
-no custom secrets are needed for the current unsigned builds. The workflow
+update signing additionally uses the `TAURI_SIGNING_PRIVATE_KEY` repository
+secret (see [the release guide](docs/RELEASING.md)). The workflow
 checks that version files and tags agree, runs frontend regression tests and
 JavaScript dependency audits, and tests the native Rust backend's validation,
 schema rejection, history pagination, and persistence on every operating system.
