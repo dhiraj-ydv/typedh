@@ -29,9 +29,13 @@ export function isDesktop(): boolean {
 
 export function isLinux(): boolean {
   if (typeof navigator === 'undefined') return false;
-  const userAgentData = (navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData;
-  const platform = userAgentData?.platform ?? (navigator as Navigator).platform ?? '';
-  const userAgent = (navigator as Navigator).userAgent ?? '';
+  const nav = navigator as Navigator & { userAgentData?: { platform?: string } };
+  const userAgent = nav.userAgent ?? '';
+  // Node.js exposes a navigator global (userAgent "Node.js/..."); never treat
+  // the test/runtime host itself as a Linux desktop. Real Linux browsers and
+  // WebViews carry "Linux" in the userAgent.
+  if (/node\.js/i.test(userAgent)) return false;
+  const platform = nav.userAgentData?.platform ?? '';
   return /linux/i.test(platform) || /linux/i.test(userAgent);
 }
 

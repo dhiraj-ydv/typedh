@@ -22,8 +22,10 @@ function withLinuxUserAgent(value, fn) {
   const hadNavigator = 'navigator' in globalThis;
   const previous = globalThis.navigator;
   if (value === null) {
-    // @ts-ignore - test helper removes the browser global.
-    delete globalThis.navigator;
+    // Non-Linux desktop stub (Windows UA); never rely on deleting Node's
+    // built-in navigator global, which is non-configurable on some runtimes.
+    // @ts-ignore - test helper installs a minimal navigator stub.
+    globalThis.navigator = { userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)', platform: '' };
   } else {
     // @ts-ignore - test helper installs a minimal navigator stub.
     globalThis.navigator = { userAgent: value, platform: '' };
@@ -119,7 +121,7 @@ test('isDesktop is false outside the Tauri webview', () => {
   assert.equal(isDesktop(), false);
 });
 
-test('isLinux detects Linux user agents and tolerates missing navigator', () => {
+test('isLinux detects Linux user agents and ignores Node and non-Linux UAs', () => {
   assert.equal(
     withLinuxUserAgent('Mozilla/5.0 (X11; Linux x86_64)', () => isLinux()),
     true,
@@ -130,6 +132,10 @@ test('isLinux detects Linux user agents and tolerates missing navigator', () => 
   );
   assert.equal(
     withLinuxUserAgent(null, () => isLinux()),
+    false,
+  );
+  assert.equal(
+    withLinuxUserAgent('Node.js/v22.0.0', () => isLinux()),
     false,
   );
 });
