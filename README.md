@@ -329,5 +329,5 @@ public issue.
 
 ## License
 
-Licensed under the [Apache License 2.0](LICENSE). See [NOTICE](NOTICE) for
+Licensed under the [Elastic License 2.0](LICENSE). See [NOTICE](NOTICE) for
 attributions.

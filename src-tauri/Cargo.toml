@@ -4,7 +4,7 @@ version = "0.1.2"
 description = "TypeDH — Colemak-DH typing tutor"
 authors = ["Exolithe Labs"]
 edition = "2021"
-license = "Apache-2.0"
+license = "Elastic-2.0"
 
 [lib]
 name = "typedh_lib"
