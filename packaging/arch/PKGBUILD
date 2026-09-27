@@ -4,7 +4,7 @@ pkgver=0.1.2
 pkgrel=1
 pkgdesc='TypeDH — Colemak-DH typing tutor'
 arch=('x86_64')
-url='https://github.com/exolithelabs/colemak-dh-tutor'
+url='https://github.com/exolithelabs/typedh'
 license=('Apache-2.0')
 depends=(
   'cairo'

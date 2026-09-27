@@ -140,7 +140,7 @@ package.
 ## In-app updates
 
 The app's **Updates** view checks
-`https://github.com/exolithelabs/colemak-dh-tutor/releases/latest/download/latest.json`
+`https://github.com/exolithelabs/typedh/releases/latest/download/latest.json`
 for a newer signed release. Windows and macOS use the stock Tauri updater
 (installer / `.app.tar.gz` payloads). Linux pacman `/usr` installs have no
 in-app self-update path (replacing package-manager-owned files is out of
@@ -182,7 +182,7 @@ any file is replaced.
 ### Verifying an update locally
 
 1. After a tag release, fetch
-   `https://github.com/exolithelabs/colemak-dh-tutor/releases/latest/download/latest.json`
+   `https://github.com/exolithelabs/typedh/releases/latest/download/latest.json`
    and confirm all three platform entries have non-empty `signature` fields.
 2. Confirm each `url` downloads and its bytes match `SHA256SUMS`. Confirm the
    Arch `.pkg.tar.zst` is attached separately and its bytes match
@@ -240,11 +240,11 @@ sudo pacman -U ./typedh-<version>-1-x86_64.pkg.tar.zst
 ```
 
 ```bash
-sudo pacman -U "https://github.com/exolithelabs/colemak-dh-tutor/releases/download/v0.1.2/typedh-0.1.2-1-x86_64.pkg.tar.zst"
+sudo pacman -U "https://github.com/exolithelabs/typedh/releases/download/v0.1.2/typedh-0.1.2-1-x86_64.pkg.tar.zst"
 ```
 
 ```bash
-curl -L -O "https://github.com/exolithelabs/colemak-dh-tutor/releases/download/v0.1.2/typedh-0.1.2-1-x86_64.pkg.tar.zst"
+curl -L -O "https://github.com/exolithelabs/typedh/releases/download/v0.1.2/typedh-0.1.2-1-x86_64.pkg.tar.zst"
 sudo pacman -U ./typedh-0.1.2-1-x86_64.pkg.tar.zst
 ```
 

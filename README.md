@@ -6,13 +6,13 @@
 lessons, live keyboard and finger guidance, custom text practice, and local
 progress history. No account or cloud database is required.
 
-[Download a release](https://github.com/exolithelabs/colemak-dh-tutor/releases) ·
-[View GitHub builds](https://github.com/exolithelabs/colemak-dh-tutor/actions/workflows/desktop-build.yml) ·
-[Report a bug](https://github.com/exolithelabs/colemak-dh-tutor/issues)
+[Download a release](https://github.com/exolithelabs/typedh/releases) ·
+[View GitHub builds](https://github.com/exolithelabs/typedh/actions/workflows/desktop-build.yml) ·
+[Report a bug](https://github.com/exolithelabs/typedh/issues)
 
 ## Downloads and installation
 
-Open [GitHub Releases](https://github.com/exolithelabs/colemak-dh-tutor/releases),
+Open [GitHub Releases](https://github.com/exolithelabs/typedh/releases),
 choose a version, and expand **Assets**. The published packages are currently
 unsigned prereleases for testing. Windows (x64), Linux (x86-64), and macOS
 (Apple Silicon and Intel) builds are available; ARM Linux and other package
@@ -56,7 +56,7 @@ sudo pacman -U ./typedh-<version>-1-x86_64.pkg.tar.zst
 #### 2. Direct URL install/update (no browser download)
 
 ```bash
-sudo pacman -U "https://github.com/exolithelabs/colemak-dh-tutor/releases/download/v0.1.2/typedh-0.1.2-1-x86_64.pkg.tar.zst"
+sudo pacman -U "https://github.com/exolithelabs/typedh/releases/download/v0.1.2/typedh-0.1.2-1-x86_64.pkg.tar.zst"
 ```
 
 Replace `v0.1.2` / `0.1.2` with the version you want.
@@ -64,7 +64,7 @@ Replace `v0.1.2` / `0.1.2` with the version you want.
 #### 3. curl then pacman -U
 
 ```bash
-curl -L -O "https://github.com/exolithelabs/colemak-dh-tutor/releases/download/v0.1.2/typedh-0.1.2-1-x86_64.pkg.tar.zst"
+curl -L -O "https://github.com/exolithelabs/typedh/releases/download/v0.1.2/typedh-0.1.2-1-x86_64.pkg.tar.zst"
 sudo pacman -U ./typedh-0.1.2-1-x86_64.pkg.tar.zst
 ```
 
@@ -310,7 +310,7 @@ separate from installed release builds.
 
 ## Support and security
 
-For bugs, open an [issue](https://github.com/exolithelabs/colemak-dh-tutor/issues)
+For bugs, open an [issue](https://github.com/exolithelabs/typedh/issues)
 with your app version, OS, installation method, and steps to reproduce. For a
 failed build, include the GitHub Actions run URL.
 
