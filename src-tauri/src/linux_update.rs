@@ -27,10 +27,11 @@ use serde::{Deserialize, Serialize};
 pub const UPDATE_MANIFEST_URL: &str =
     "https://github.com/exolithelabs/colemak-dh-tutor/releases/latest/download/latest.json";
 
-/// Minisign public key (base64 key line). This MUST equal
-/// `plugins.updater.pubkey` in `tauri.conf.json`; the `pubkey_matches_config`
-/// test enforces that. The private half lives only in the
-/// `TAURI_SIGNING_PRIVATE_KEY` GitHub Actions secret.
+/// Minisign public key (raw base64 key line). The same key is embedded in the
+/// base64-encoded `.pub` file stored as `plugins.updater.pubkey` in
+/// `tauri.conf.json`; the `pubkey_matches_config` test enforces that. The
+/// private half lives only in the `TAURI_SIGNING_PRIVATE_KEY` GitHub Actions
+/// secret.
 pub const UPDATE_PUBKEY_BASE64: &str =
     "RWSCdzIGCe3FZVct7rUWtYpkiT3vPgxjmPw/Ls3GUJvmRO5NMTa3m/Xz";
 
@@ -481,6 +482,8 @@ mod tests {
 
     #[test]
     fn pubkey_matches_config() {
+        use base64::{engine::general_purpose::STANDARD as BASE64, Engine as _};
+
         let config = include_str!("../tauri.conf.json");
         let parsed: serde_json::Value =
             serde_json::from_str(config).expect("tauri.conf.json must parse");
@@ -488,7 +491,16 @@ mod tests {
             .pointer("/plugins/updater/pubkey")
             .and_then(|value| value.as_str())
             .expect("plugins.updater.pubkey must be set");
-        assert_eq!(configured, UPDATE_PUBKEY_BASE64);
+        // Tauri stores the whole base64-encoded .pub file here; the backend
+        // uses the raw key line from inside it. Both must carry the same key.
+        let decoded = BASE64
+            .decode(configured)
+            .expect("updater pubkey must be base64");
+        let text = String::from_utf8(decoded).expect("updater pubkey must decode to text");
+        assert!(
+            text.lines().any(|line| line.trim() == UPDATE_PUBKEY_BASE64),
+            "tauri.conf.json pubkey must embed the backend updater key"
+        );
         let endpoints = parsed
             .pointer("/plugins/updater/endpoints")
             .and_then(|value| value.as_array())

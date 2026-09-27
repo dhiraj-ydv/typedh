@@ -54,7 +54,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "RWSCdzIGCe3FZVct7rUWtYpkiT3vPgxjmPw/Ls3GUJvmRO5NMTa3m/Xz",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDY1QzVFRDA5MDYzMjc3ODIKUldTQ2R6SUdDZTNGWlZjdDdyVVd0WXBraVQzdlBneGptUHcvTHMzR1VKdm1STzVOTVRhM20vWHoK",
       "endpoints": [
         "https://github.com/exolithelabs/colemak-dh-tutor/releases/latest/download/latest.json"
       ]
