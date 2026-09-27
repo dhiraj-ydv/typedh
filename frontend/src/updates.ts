@@ -48,7 +48,7 @@ export function isLinux(): boolean {
 }
 
 export const LINUX_PACMAN_MESSAGE =
-  'Linux installs update with sudo pacman -U, not in-app updates. Download the newer .pkg.tar.zst from GitHub Releases and run sudo pacman -U on it; pacman -Syu alone will not pick it up.';
+  'Linux installs update with sudo pacman -U, not in-app updates. Download the newer typedh .pkg.tar.zst from GitHub Releases and run sudo pacman -U on it; pacman -Syu alone will not pick it up.';
 
 /**
  * Check for updates. Windows and macOS use the signed stock Tauri updater

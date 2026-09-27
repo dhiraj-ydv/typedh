@@ -68,7 +68,7 @@ impl Database {
         private_permissions(&path, 0o600)?;
         connection.busy_timeout(Duration::from_secs(5)).map_err(storage_error)?;
         let version: i32 = connection.pragma_query_value(None, "user_version", |row| row.get(0)).map_err(storage_error)?;
-        if version > SCHEMA_VERSION { return Err("This database requires a newer version of Colemak-DH Tutor.".into()); }
+        if version > SCHEMA_VERSION { return Err("This database requires a newer version of TypeDH.".into()); }
         if existed && version < SCHEMA_VERSION {
             return Err("Unsupported development database. Move the old colemak.db and its WAL/SHM files out of the app-data folder while the app is closed, then restart.".into());
         }

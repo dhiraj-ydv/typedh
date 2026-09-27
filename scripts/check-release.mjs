@@ -6,7 +6,7 @@ const versions = [
   JSON.parse(read('package-lock.json')).version,
   JSON.parse(read('src-tauri/tauri.conf.json')).version,
   read('src-tauri/Cargo.toml').match(/^version = "([^"]+)"/m)?.[1],
-  read('src-tauri/Cargo.lock').match(/name = "colemak-dh-tutor"\r?\nversion = "([^"]+)"/)?.[1],
+  read('src-tauri/Cargo.lock').match(/name = "typedh"\r?\nversion = "([^"]+)"/)?.[1],
   read('packaging/arch/PKGBUILD').match(/^pkgver=(.+)$/m)?.[1],
 ];
 for (const value of versions) assert.equal(value, version, 'Application versions disagree');

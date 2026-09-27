@@ -1,8 +1,8 @@
 # Maintainer: Exolithe Labs <https://github.com/exolithelabs>
-pkgname=colemak-dh-tutor
+pkgname=typedh
 pkgver=0.1.2
 pkgrel=1
-pkgdesc='Desktop touch-typing tutor for the Colemak-DH keyboard layout'
+pkgdesc='TypeDH — Colemak-DH typing tutor'
 arch=('x86_64')
 url='https://github.com/exolithelabs/colemak-dh-tutor'
 license=('Apache-2.0')

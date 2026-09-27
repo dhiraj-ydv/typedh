@@ -1,8 +1,8 @@
-# Colemak-DH Tutor
+# TypeDH
 
 [Downloads](#downloads-and-installation) · [Usage](#using-the-app) · [User data](#user-data-and-privacy) · [Architecture](#architecture) · [GitHub workflow](#github-builds-and-releases) · [Development](#development) · [Support](#support-and-security) · [License](#license)
 
-A desktop touch-typing tutor for the Colemak-DH keyboard layout, with progressive
+**TypeDH — Colemak-DH typing tutor**, with progressive
 lessons, live keyboard and finger guidance, custom text practice, and local
 progress history. No account or cloud database is required.
 
@@ -20,10 +20,10 @@ formats are not configured.
 
 | Download | Purpose |
 | --- | --- |
-| `Colemak-DH.Tutor_<version>_x64-setup.exe` | Windows installer |
-| `colemak-dh-tutor-<version>-1-x86_64.pkg.tar.zst` | Linux Arch pacman package (`pacman -U`) |
-| `Colemak-DH Tutor_<version>_aarch64.dmg` | macOS installer for Apple Silicon (M1 and later) |
-| `Colemak-DH Tutor_<version>_x64.dmg` | macOS installer for Intel Macs |
+| `TypeDH_<version>_x64-setup.exe` | Windows installer |
+| `typedh-<version>-1-x86_64.pkg.tar.zst` | Linux Arch pacman package (`pacman -U`) |
+| `TypeDH_<version>_aarch64.dmg` | macOS installer for Apple Silicon (M1 and later) |
+| `TypeDH_<version>_x64.dmg` | macOS installer for Intel Macs |
 
 The automatically generated **Source code** archives contain project sources,
 not installers. Installed users do not need development tools. The current
@@ -34,7 +34,7 @@ in subsequent Actions builds until a new release is tagged.
 
 ### Windows
 
-Download and run the `.exe` installer, then launch **Colemak-DH Tutor** from the
+Download and run the `.exe` installer, then launch **TypeDH** from the
 Start menu. Installation is configured for the current Windows user. The unsigned
 installer may show an unknown-publisher warning.
 
@@ -50,13 +50,13 @@ package file.
 Download the `.pkg.tar.zst` from GitHub Releases (browser), then:
 
 ```bash
-sudo pacman -U ./colemak-dh-tutor-<version>-1-x86_64.pkg.tar.zst
+sudo pacman -U ./typedh-<version>-1-x86_64.pkg.tar.zst
 ```
 
 #### 2. Direct URL install/update (no browser download)
 
 ```bash
-sudo pacman -U "https://github.com/exolithelabs/colemak-dh-tutor/releases/download/v0.1.2/colemak-dh-tutor-0.1.2-1-x86_64.pkg.tar.zst"
+sudo pacman -U "https://github.com/exolithelabs/colemak-dh-tutor/releases/download/v0.1.2/typedh-0.1.2-1-x86_64.pkg.tar.zst"
 ```
 
 Replace `v0.1.2` / `0.1.2` with the version you want.
@@ -64,15 +64,15 @@ Replace `v0.1.2` / `0.1.2` with the version you want.
 #### 3. curl then pacman -U
 
 ```bash
-curl -L -O "https://github.com/exolithelabs/colemak-dh-tutor/releases/download/v0.1.2/colemak-dh-tutor-0.1.2-1-x86_64.pkg.tar.zst"
-sudo pacman -U ./colemak-dh-tutor-0.1.2-1-x86_64.pkg.tar.zst
+curl -L -O "https://github.com/exolithelabs/colemak-dh-tutor/releases/download/v0.1.2/typedh-0.1.2-1-x86_64.pkg.tar.zst"
+sudo pacman -U ./typedh-0.1.2-1-x86_64.pkg.tar.zst
 ```
 
 All three are the same packaging method; only how the file reaches `pacman`
 differs.
 
-Launch **Colemak-DH Tutor** from your application menu, or run
-`colemak-dh-tutor` from a terminal. Pacman installs the runtime libraries the
+Launch **TypeDH** from your application menu, or run
+`typedh` from a terminal. Pacman installs the runtime libraries the
 package declares (`webkit2gtk-4.1`, `gtk3`, `libsoup3`,
 `libayatana-appindicator`, `librsvg`, `cairo`, `pango`, `gdk-pixbuf2`,
 `glib2`, `openssl`, `hicolor-icon-theme`, `desktop-file-utils`; see
@@ -92,15 +92,15 @@ If you previously installed via the retired `.tar.zst` + `install.sh`
 ```
 
 using the same `--prefix` you installed with (default `~/.local`). If you no
-longer have that directory, remove at least `~/.local/bin/colemak-dh-tutor`,
-the `colemak-dh-tutor.desktop` entry under
+longer have that directory, remove at least `~/.local/bin/colemak-dh-tutor`
+(the old binary name), the `colemak-dh-tutor.desktop` entry under
 `~/.local/share/applications/`, and its icons under
-`~/.local/share/icons/`, then install the pacman package above.
+`~/.local/share/icons/`, then install the `typedh` pacman package above.
 
 ### macOS (Apple Silicon and Intel)
 
 Download the `.dmg` matching your Mac — `aarch64` for Apple Silicon (M1 and
-later), `x64` for Intel — then open it and drag **Colemak-DH Tutor** to
+later), `x64` for Intel — then open it and drag **TypeDH** to
 **Applications**. Launch the app from Applications or Spotlight.
 
 The current DMGs are ad-hoc signed, not notarized. On first launch Gatekeeper
@@ -150,13 +150,18 @@ current OS user. The backend creates `colemak.db` there and seeds the built-in
 lessons. Later launches reuse that database. Different OS users have separate
 progress; there is no cloud synchronization or online login.
 
+The product was renamed from Colemak-DH Tutor to **TypeDH** (issue #18), but
+the application ID and database filename were deliberately kept unchanged so
+existing progress is preserved with no migration: the UI says TypeDH while the
+data path stays `io.github.exolithelabs.ColemakDHTutor` / `colemak.db`.
+
 The source repository contains code and bundled assets. Runtime databases,
 generated binaries, dependency directories, and build output are ignored by Git.
 The installed application passes an explicit per-user data path to the backend,
 so normal app startup does not store progress in the repository or install folder.
 
 Typical database paths for the application ID
-`io.github.exolithelabs.ColemakDHTutor`:
+`io.github.exolithelabs.ColemakDHTutor` (kept across the TypeDH rename):
 
 | Environment | Database location |
 | --- | --- |

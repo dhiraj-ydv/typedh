@@ -1,13 +1,13 @@
 [package]
-name = "colemak-dh-tutor"
+name = "typedh"
 version = "0.1.2"
-description = "A desktop touch-typing tutor for the Colemak-DH layout"
+description = "TypeDH — Colemak-DH typing tutor"
 authors = ["Exolithe Labs"]
 edition = "2021"
 license = "Apache-2.0"
 
 [lib]
-name = "colemak_dh_tutor_lib"
+name = "typedh_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

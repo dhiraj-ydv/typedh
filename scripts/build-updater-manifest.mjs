@@ -89,7 +89,7 @@ export function buildManifest({ files, version, repo, tag }) {
 
   return {
     version,
-    notes: `Colemak-DH Tutor ${tag}: see https://github.com/${repo}/releases/tag/${tag} for release notes.`,
+    notes: `TypeDH ${tag}: see https://github.com/${repo}/releases/tag/${tag} for release notes.`,
     pub_date: new Date().toISOString(),
     platforms: {
       'windows-x86_64': {
@@ -124,9 +124,9 @@ function selfTest() {
   try {
     const version = '0.9.9';
     const payloads = [
-      'Colemak-DH Tutor_0.9.9_x64-setup.exe',
-      'Colemak-DH Tutor_0.9.9_aarch64.app.tar.gz',
-      'Colemak-DH Tutor_0.9.9_x64.app.tar.gz',
+      'TypeDH_0.9.9_x64-setup.exe',
+      'TypeDH_0.9.9_aarch64.app.tar.gz',
+      'TypeDH_0.9.9_x64.app.tar.gz',
     ];
     for (const name of payloads) {
       writeFileSync(join(dir, name), 'payload');
@@ -147,10 +147,10 @@ function selfTest() {
       'darwin-x86_64',
       'windows-x86_64',
     ]);
-    // Spaces in asset names must be URL-encoded; arch must route correctly.
+    // Arch must route correctly; asset names carry the TypeDH prefix.
     assert.equal(
       platforms['windows-x86_64'].url,
-      'https://github.com/owner/repo/releases/download/v0.9.9/Colemak-DH%20Tutor_0.9.9_x64-setup.exe',
+      'https://github.com/owner/repo/releases/download/v0.9.9/TypeDH_0.9.9_x64-setup.exe',
     );
     assert.match(platforms['darwin-aarch64'].url, /aarch64\.app\.tar\.gz$/);
     assert.match(platforms['darwin-x86_64'].url, /x64\.app\.tar\.gz$/);
@@ -159,9 +159,9 @@ function selfTest() {
     }
     // Missing platform payloads fail loudly instead of shipping half a manifest.
     const noIntel = [
-      'Colemak-DH Tutor_0.9.9_x64-setup.exe',
-      'Colemak-DH Tutor_0.9.9_aarch64.app.tar.gz',
-      'Colemak-DH Tutor_0.9.9_universal.app.tar.gz',
+      'TypeDH_0.9.9_x64-setup.exe',
+      'TypeDH_0.9.9_aarch64.app.tar.gz',
+      'TypeDH_0.9.9_universal.app.tar.gz',
     ];
     assert.throws(
       () => buildManifest({ files: noIntel, version, repo: 'o/r', tag: 'v0.9.9' }),

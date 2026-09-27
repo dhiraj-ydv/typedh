@@ -242,12 +242,12 @@ async function handleFileUpload(event: Event) {
   input.value = '';
 }
 async function stopApp() {
-  if (!confirm('Close Colemak-DH Tutor?')) return;
+  if (!confirm('Close TypeDH?')) return;
   try { await stopApplication(); }
   catch { errorMessage.value = 'The app could not close. Use the window close button.'; }
 }
 async function restartApp() {
-  if (!confirm('Restart Colemak-DH Tutor?')) return;
+  if (!confirm('Restart TypeDH?')) return;
   try { await restartApplication(); }
   catch { errorMessage.value = 'The app could not restart. Close and reopen it.'; }
 }
@@ -321,7 +321,7 @@ onUnmounted(() => {
       <div class="header-left">
         <button class="hamburger-btn" @click="toggleDrawer">☰</button>
         <div class="logo">
-          <h1>Colemak-DH</h1>
+          <h1>TypeDH</h1>
         </div>
       </div>
       <div class="current-lesson-name">
@@ -438,7 +438,7 @@ onUnmounted(() => {
           <p class="update-note">
             Updates are signed and verified before installing. On Windows and macOS the app closes while the
             installer finishes — reopen it if it does not restart by itself. On Linux, update with
-            sudo pacman -U using the newer .pkg.tar.zst from GitHub Releases. Your lessons and
+            sudo pacman -U using the newer typedh .pkg.tar.zst from GitHub Releases. Your lessons and
             progress are kept.
           </p>
         </div>

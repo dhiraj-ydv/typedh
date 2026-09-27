@@ -6,7 +6,7 @@ The **Desktop build** workflow runs on pull requests, pushes to `master`, versio
 tags, and manual dispatches. It produces:
 
 - an unsigned Windows NSIS `.exe` installer (plus its updater `.sig`);
-- an Arch Linux pacman package `colemak-dh-tutor-<version>-1-x86_64.pkg.tar.zst`
+- an Arch Linux pacman package `typedh-<version>-1-x86_64.pkg.tar.zst`
   for x86-64; and
 - two macOS `.dmg` installers: `aarch64` (Apple Silicon) and `x86_64` (Intel),
   plus per-arch `.app.tar.gz` updater archives with `.sig` files.
@@ -44,7 +44,7 @@ The `linux-arch` job runs on `ubuntu-24.04`:
    `usr/share/icons`, `usr/share/metainfo`) into `packaging/arch/work/root/`
    and run `makepkg` in `archlinux:latest` via
    `packaging/arch/build-pkg.sh`, producing
-   `dist/colemak-dh-tutor-<version>-1-x86_64.pkg.tar.zst`.
+   `dist/typedh-<version>-1-x86_64.pkg.tar.zst`.
 
 `packaging/arch/PKGBUILD` declares the pacman runtime `depends`:
 
@@ -64,14 +64,14 @@ target per Apple architecture (no universal binary):
 
 | Matrix leg | Rust target | Users | Artifact |
 | --- | --- | --- | --- |
-| `aarch64` | `aarch64-apple-darwin` | Apple Silicon (M1 and later), built natively | `Colemak-DH-Tutor-macOS-aarch64` |
-| `x86_64` | `x86_64-apple-darwin` | Intel Macs, cross-compiled on the same runner | `Colemak-DH-Tutor-macOS-x86_64` |
+| `aarch64` | `aarch64-apple-darwin` | Apple Silicon (M1 and later), built natively | `TypeDH-macOS-aarch64` |
+| `x86_64` | `x86_64-apple-darwin` | Intel Macs, cross-compiled on the same runner | `TypeDH-macOS-x86_64` |
 
 Each leg runs `npm run tauri build -- --bundles app,dmg --target <triple>` and
 uploads the `.dmg` plus `src-tauri/target/<triple>/release/bundle/macos/*.app.tar.gz`
 (the stock updater payload, with `.sig` files when the signing secret is set). Tauri embeds the
-architecture in the DMG filename (`Colemak-DH Tutor_<version>_aarch64.dmg`,
-`Colemak-DH Tutor_<version>_x64.dmg`), so release assets are self-labeling. The
+architecture in the DMG filename (`TypeDH_<version>_aarch64.dmg`,
+`TypeDH_<version>_x64.dmg`), so release assets are self-labeling. The
 per-arch choice (rather than one universal DMG) keeps asset names unambiguous
 and matches Tauri's documented GitHub pipeline; a universal binary can be
 revisited later if Intel support is ever dropped.
@@ -190,7 +190,7 @@ any file is replaced.
 3. End-to-end: install build N, push a new version tag, then use the app's
    **Updates** view to move to N+1 on Windows/macOS and confirm the version
    and progress survive. On Linux, verify a fresh `sudo pacman -U` install
-   launches from the application menu / `colemak-dh-tutor`, then upgrade with
+   launches from the application menu / `typedh`, then upgrade with
    `sudo pacman -U` to the newer package and confirm progress survives.
 
 ## Creating a release candidate
@@ -229,23 +229,23 @@ possible) before promoting them to a stable release.
 4. Enable GitHub private vulnerability reporting before making the repository
    public.
 
-Users install the macOS DMG by opening it and dragging **Colemak-DH Tutor**
+Users install the macOS DMG by opening it and dragging **TypeDH**
 to **Applications**, then launching from Applications or Spotlight.
 
 Users install or update the Arch package with `pacman -U`. All three reach
 the same package; only how the file reaches `pacman` differs:
 
 ```bash
-sudo pacman -U ./colemak-dh-tutor-<version>-1-x86_64.pkg.tar.zst
+sudo pacman -U ./typedh-<version>-1-x86_64.pkg.tar.zst
 ```
 
 ```bash
-sudo pacman -U "https://github.com/exolithelabs/colemak-dh-tutor/releases/download/v0.1.2/colemak-dh-tutor-0.1.2-1-x86_64.pkg.tar.zst"
+sudo pacman -U "https://github.com/exolithelabs/colemak-dh-tutor/releases/download/v0.1.2/typedh-0.1.2-1-x86_64.pkg.tar.zst"
 ```
 
 ```bash
-curl -L -O "https://github.com/exolithelabs/colemak-dh-tutor/releases/download/v0.1.2/colemak-dh-tutor-0.1.2-1-x86_64.pkg.tar.zst"
-sudo pacman -U ./colemak-dh-tutor-0.1.2-1-x86_64.pkg.tar.zst
+curl -L -O "https://github.com/exolithelabs/colemak-dh-tutor/releases/download/v0.1.2/typedh-0.1.2-1-x86_64.pkg.tar.zst"
+sudo pacman -U ./typedh-0.1.2-1-x86_64.pkg.tar.zst
 ```
 
 Pacman installs the binary under `/usr/bin`, the desktop entry, icons, and

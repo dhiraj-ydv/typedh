@@ -11,7 +11,7 @@
   "dependencies": {
     "@tauri-apps/api": "^2.8.0",
     "@tauri-apps/plugin-updater": "^2.0.0",
-    "colemak-dh-tutor-desktop": "file:..",
+    "typedh-desktop": "file:..",
     "vue": "^3.5.32"
   },
   "devDependencies": {

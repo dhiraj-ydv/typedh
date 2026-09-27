@@ -2,7 +2,7 @@
 set -euo pipefail
 
 if [[ $# -ne 1 || ! -f "$1" ]]; then
-  echo "Usage: $0 path/to/colemak-dh-tutor.deb" >&2
+  echo "Usage: $0 path/to/typedh.deb" >&2
   exit 2
 fi
 
@@ -63,5 +63,5 @@ if [[ ${#packages[@]} -ne 1 ]]; then
 fi
 
 install -m644 "${packages[0]}" \
-  "$output_dir/colemak-dh-tutor-${pkgver}-1-x86_64.pkg.tar.zst"
-echo "Wrote $output_dir/colemak-dh-tutor-${pkgver}-1-x86_64.pkg.tar.zst"
+  "$output_dir/typedh-${pkgver}-1-x86_64.pkg.tar.zst"
+echo "Wrote $output_dir/typedh-${pkgver}-1-x86_64.pkg.tar.zst"

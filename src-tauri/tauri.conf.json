@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Colemak-DH Tutor",
+  "productName": "TypeDH",
   "version": "0.1.2",
   "identifier": "io.github.exolithelabs.ColemakDHTutor",
   "build": {
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "Colemak-DH Tutor",
+        "title": "TypeDH",
         "width": 1180,
         "height": 820,
         "minWidth": 800,
@@ -32,8 +32,8 @@
     "publisher": "Exolithe Labs",
     "copyright": "Copyright 2026 Exolithe Labs",
     "category": "Education",
-    "shortDescription": "Learn the Colemak-DH keyboard layout",
-    "longDescription": "A focused desktop touch-typing tutor with progressive Colemak-DH lessons, live finger guidance, and private local progress tracking.",
+    "shortDescription": "TypeDH — Colemak-DH typing tutor",
+    "longDescription": "TypeDH is a focused desktop touch-typing tutor with progressive Colemak-DH lessons, live finger guidance, and private local progress tracking.",
     "licenseFile": "../LICENSE",
     "icon": [
       "icons/32x32.png",

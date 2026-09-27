@@ -63,5 +63,5 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![get_lessons, save_progress, get_progress, stop_application, restart_application, app_version])
         .run(tauri::generate_context!())
-        .expect("failed to run Colemak-DH Tutor");
+        .expect("failed to run TypeDH");
 }
