@@ -41,7 +41,7 @@ src-tauri/binaries/*
 
 # Local application control/build artifacts
 *.trigger
-packaging/linux/work/
+packaging/arch/work/
 dist/
 
 # IDEs

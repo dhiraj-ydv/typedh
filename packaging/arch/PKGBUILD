@@ -1,0 +1,29 @@
+# Maintainer: Exolithe Labs <https://github.com/exolithelabs>
+pkgname=colemak-dh-tutor
+pkgver=0.1.2
+pkgrel=1
+pkgdesc='Desktop touch-typing tutor for the Colemak-DH keyboard layout'
+arch=('x86_64')
+url='https://github.com/exolithelabs/colemak-dh-tutor'
+license=('Apache-2.0')
+depends=(
+  'cairo'
+  'desktop-file-utils'
+  'gdk-pixbuf2'
+  'glib2'
+  'gtk3'
+  'hicolor-icon-theme'
+  'libayatana-appindicator'
+  'librsvg'
+  'libsoup3'
+  'openssl'
+  'pango'
+  'webkit2gtk-4.1'
+)
+options=('!debug' '!strip')
+source=('root.tar')
+sha256sums=('SKIP')
+
+package() {
+  cp -a "${srcdir}/root/." "${pkgdir}/"
+}

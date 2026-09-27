@@ -2,9 +2,8 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import Keyboard from './components/Keyboard.vue';
 import TypingArea from './components/TypingArea.vue';
-import { getLessons, getProgress, saveProgress, restartApplication, stopApplication, appVersion, linuxInstallInfo, installLinuxUpdate } from './api';
+import { getLessons, getProgress, saveProgress, restartApplication, stopApplication, appVersion } from './api';
 import { check } from '@tauri-apps/plugin-updater';
-import { listen } from '@tauri-apps/api/event';
 import { checkForUpdates, friendlyUpdateError, progressFraction, isDesktop, type UpdateCheck } from './updates';
 
 interface Lesson { id: number; title: string; content: string; level: number }
@@ -90,7 +89,6 @@ async function checkUpdates() {
           },
         };
       },
-      linuxInfo: linuxInstallInfo,
     });
   } catch (error) {
     updatePhase.value = 'error';
@@ -131,40 +129,6 @@ async function installStockUpdate() {
   } catch (error) {
     updatePhase.value = 'error';
     updateError.value = friendlyUpdateError(error);
-  }
-}
-
-async function installLinuxManagedUpdate() {
-  const result = updateCheck.value;
-  if (!result || result.kind !== 'available-linux') return;
-  if (!confirm(`Download and install version ${result.version}? Your progress is kept.`)) return;
-  updatePhase.value = 'downloading';
-  updateProgress.value = null;
-  updateStatusText.value = `Downloading version ${result.version}…`;
-  updateError.value = '';
-  const unlisten = await listen<{ phase: string; downloaded: number; total?: number }>(
-    'linux-update-progress',
-    (event) => {
-      const { phase, downloaded, total } = event.payload;
-      if (phase === 'verify') updateStatusText.value = 'Verifying the update signature…';
-      else if (phase === 'install') {
-        updatePhase.value = 'installing';
-        updateStatusText.value = 'Replacing the installed files…';
-      } else if (phase === 'download') {
-        updateProgress.value = progressFraction(downloaded, total);
-      }
-    },
-  );
-  try {
-    await installLinuxUpdate(result.version);
-    updatePhase.value = 'installed';
-    updateProgress.value = 1;
-    updateStatusText.value = `Version ${result.version} is installed.`;
-  } catch (error) {
-    updatePhase.value = 'error';
-    updateError.value = friendlyUpdateError(error);
-  } finally {
-    unlisten();
   }
 }
 
@@ -465,13 +429,6 @@ onUnmounted(() => {
               Download &amp; install
             </button>
             <button
-              v-if="updateCheck && updateCheck.kind === 'available-linux'"
-              :disabled="updatePhase !== 'idle'"
-              @click="installLinuxManagedUpdate"
-            >
-              Download &amp; install
-            </button>
-            <button
               v-if="updatePhase === 'installed'"
               @click="restartAfterUpdate"
             >
@@ -479,8 +436,9 @@ onUnmounted(() => {
             </button>
           </div>
           <p class="update-note">
-            Updates are signed and verified before installing. On Windows the app closes while the
-            installer finishes — reopen it if it does not restart by itself. Your lessons and
+            Updates are signed and verified before installing. On Windows and macOS the app closes while the
+            installer finishes — reopen it if it does not restart by itself. On Linux, update with
+            sudo pacman -U using the newer .pkg.tar.zst from GitHub Releases. Your lessons and
             progress are kept.
           </p>
         </div>

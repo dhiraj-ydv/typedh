@@ -9,8 +9,10 @@
  *   windows-x86_64 -> NSIS .exe (+ .exe.sig)
  *   darwin-aarch64  -> .app.tar.gz (+ .sig)
  *   darwin-x86_64   -> .app.tar.gz (+ .sig)
- *   linux-x86_64    -> ~/.local .tar.zst (+ .sig, verified by the app itself;
- *                      the stock Tauri updater only handles AppImage on Linux)
+ *
+ * Linux uses Arch `.pkg.tar.zst` packages installed via `pacman -U` (issue
+ * #17) and has no in-app updater entry; Linux users update manually with
+ * pacman. The stock Tauri updater only handles AppImage on Linux.
  *
  * Usage:
  *   node scripts/build-updater-manifest.mjs --dir release-artifacts \
@@ -71,11 +73,6 @@ export function buildManifest({ files, version, repo, tag }) {
     'Windows NSIS installer',
     (name) => name.endsWith('-setup.exe') && !isSig(name),
   );
-  const linuxPayload = findExactlyOne(
-    files,
-    'Linux ~/.local tarball',
-    (name) => name.startsWith('colemak-dh-tutor-') && name.endsWith('.tar.zst') && !isSig(name),
-  );
   const macArchives = files.filter((name) => name.endsWith('.app.tar.gz') && !isSig(name));
   if (macArchives.length !== 2) {
     throw new Error(`Expected exactly two macOS .app.tar.gz archives, found ${macArchives.length}.`);
@@ -110,11 +107,6 @@ export function buildManifest({ files, version, repo, tag }) {
         signature: '',
         __payload: intelArchive,
       },
-      'linux-x86_64': {
-        url: assetUrl(linuxPayload),
-        signature: '',
-        __payload: linuxPayload,
-      },
     },
   };
 }
@@ -135,7 +127,6 @@ function selfTest() {
       'Colemak-DH Tutor_0.9.9_x64-setup.exe',
       'Colemak-DH Tutor_0.9.9_aarch64.app.tar.gz',
       'Colemak-DH Tutor_0.9.9_x64.app.tar.gz',
-      'colemak-dh-tutor-0.9.9-x86_64.tar.zst',
     ];
     for (const name of payloads) {
       writeFileSync(join(dir, name), 'payload');
@@ -154,7 +145,6 @@ function selfTest() {
     assert.deepEqual(Object.keys(platforms).sort(), [
       'darwin-aarch64',
       'darwin-x86_64',
-      'linux-x86_64',
       'windows-x86_64',
     ]);
     // Spaces in asset names must be URL-encoded; arch must route correctly.
@@ -164,7 +154,6 @@ function selfTest() {
     );
     assert.match(platforms['darwin-aarch64'].url, /aarch64\.app\.tar\.gz$/);
     assert.match(platforms['darwin-x86_64'].url, /x64\.app\.tar\.gz$/);
-    assert.match(platforms['linux-x86_64'].url, /colemak-dh-tutor-0\.9\.9-x86_64\.tar\.zst$/);
     for (const entry of Object.values(platforms)) {
       assert.match(entry.signature, /^sig-for-/);
     }
@@ -173,15 +162,14 @@ function selfTest() {
       'Colemak-DH Tutor_0.9.9_x64-setup.exe',
       'Colemak-DH Tutor_0.9.9_aarch64.app.tar.gz',
       'Colemak-DH Tutor_0.9.9_universal.app.tar.gz',
-      'colemak-dh-tutor-0.9.9-x86_64.tar.zst',
     ];
     assert.throws(
       () => buildManifest({ files: noIntel, version, repo: 'o/r', tag: 'v0.9.9' }),
       /Intel updater archive/,
     );
     assert.throws(
-      () => buildManifest({ files: files.filter((n) => !n.endsWith('.tar.zst')), version, repo: 'o/r', tag: 'v0.9.9' }),
-      /Linux/,
+      () => buildManifest({ files: files.filter((n) => !n.endsWith('-setup.exe')), version, repo: 'o/r', tag: 'v0.9.9' }),
+      /Windows/,
     );
     console.log('Updater manifest self-test passed.');
   } finally {

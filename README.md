@@ -21,7 +21,7 @@ formats are not configured.
 | Download | Purpose |
 | --- | --- |
 | `Colemak-DH.Tutor_<version>_x64-setup.exe` | Windows installer |
-| `colemak-dh-tutor-<version>-x86_64.tar.zst` | Linux `~/.local` tarball with `install.sh` |
+| `colemak-dh-tutor-<version>-1-x86_64.pkg.tar.zst` | Linux Arch pacman package (`pacman -U`) |
 | `Colemak-DH Tutor_<version>_aarch64.dmg` | macOS installer for Apple Silicon (M1 and later) |
 | `Colemak-DH Tutor_<version>_x64.dmg` | macOS installer for Intel Macs |
 
@@ -38,38 +38,64 @@ Download and run the `.exe` installer, then launch **Colemak-DH Tutor** from the
 Start menu. Installation is configured for the current Windows user. The unsigned
 installer may show an unknown-publisher warning.
 
-### Linux (Arch-based, ~/.local install)
+### Linux (Arch-based, pacman -U install)
 
-Download the `.tar.zst` archive, extract it, and run its installer from the
-extracted directory. No sudo is required; files are installed user-owned
-under `~/.local` so a future in-app updater can replace them:
+Install or update with `pacman -U` using the `.pkg.tar.zst` from GitHub
+Releases. This is developer-hosted on Releases (not AUR / `pacman -Syu`).
+The same command upgrades an older installed version when given a newer
+package file.
+
+#### 1. Download then install/update
+
+Download the `.pkg.tar.zst` from GitHub Releases (browser), then:
 
 ```bash
-tar --zstd -xf colemak-dh-tutor-<version>-x86_64.tar.zst
-cd colemak-dh-tutor-<version>-x86_64
-./install.sh
+sudo pacman -U ./colemak-dh-tutor-<version>-1-x86_64.pkg.tar.zst
 ```
 
-This installs roughly:
+#### 2. Direct URL install/update (no browser download)
 
-- binary → `~/.local/bin/`
-- desktop entry → `~/.local/share/applications/`
-- icons → `~/.local/share/icons/`
+```bash
+sudo pacman -U "https://github.com/exolithelabs/colemak-dh-tutor/releases/download/v0.1.2/colemak-dh-tutor-0.1.2-1-x86_64.pkg.tar.zst"
+```
+
+Replace `v0.1.2` / `0.1.2` with the version you want.
+
+#### 3. curl then pacman -U
+
+```bash
+curl -L -O "https://github.com/exolithelabs/colemak-dh-tutor/releases/download/v0.1.2/colemak-dh-tutor-0.1.2-1-x86_64.pkg.tar.zst"
+sudo pacman -U ./colemak-dh-tutor-0.1.2-1-x86_64.pkg.tar.zst
+```
+
+All three are the same packaging method; only how the file reaches `pacman`
+differs.
 
 Launch **Colemak-DH Tutor** from your application menu, or run
-`colemak-dh-tutor` from a terminal (ensure `~/.local/bin` is on your `PATH`).
-To remove it later, run `./uninstall.sh` from the same extracted directory
-with the same `--prefix` (default `~/.local`).
+`colemak-dh-tutor` from a terminal. Pacman installs the runtime libraries the
+package declares (`webkit2gtk-4.1`, `gtk3`, `libsoup3`,
+`libayatana-appindicator`, `librsvg`, `cairo`, `pango`, `gdk-pixbuf2`,
+`glib2`, `openssl`, `hicolor-icon-theme`, `desktop-file-utils`; see
+`packaging/arch/PKGBUILD`). The app is not published to the AUR or an
+official Arch repository; GitHub Releases is the distribution path. Updates
+are manual via `pacman -U` with a newer file/URL — `pacman -Syu` alone will
+not pick this up without an AUR/repo entry.
 
-The tarball targets Arch-based distributions first and does not bundle the
-system WebKit/GTK runtime. Install the runtime libraries for your distro
-before launching; on Arch the pacman names include `webkit2gtk-4.1`, `gtk3`,
-`libsoup3`, `libayatana-appindicator`, `librsvg`, `cairo`, `pango`,
-`gdk-pixbuf2`, `glib2`, `openssl`, `hicolor-icon-theme`, and
-`desktop-file-utils`. The app is not published to the AUR or an official Arch
-repository; GitHub Releases is the distribution path. The previous
-`.pkg.tar.zst` pacman artifact was removed in favor of this tarball (see
-`docs/RELEASING.md`).
+#### Migrating from the old `~/.local` tarball
+
+If you previously installed via the retired `.tar.zst` + `install.sh`
+`~/.local` method, remove those user-owned files first, then install via
+`pacman -U`. From the old extracted directory:
+
+```bash
+./uninstall.sh
+```
+
+using the same `--prefix` you installed with (default `~/.local`). If you no
+longer have that directory, remove at least `~/.local/bin/colemak-dh-tutor`,
+the `colemak-dh-tutor.desktop` entry under
+`~/.local/share/applications/`, and its icons under
+`~/.local/share/icons/`, then install the pacman package above.
 
 ### macOS (Apple Silicon and Intel)
 
@@ -85,18 +111,18 @@ release (see `docs/RELEASING.md`).
 
 ### Updating
 
-Open the menu and choose **Updates**, then **Check for updates**. When a newer
-signed release exists, the app downloads it, verifies its signature, and
-installs it; unsigned or tampered payloads are rejected. Your lessons and
-progress are kept.
+Open the menu and choose **Updates**, then **Check for updates**. On Windows
+and macOS, when a newer signed release exists, the app downloads it, verifies
+its signature, and installs it; unsigned or tampered payloads are rejected.
+Your lessons and progress are kept.
 
 - **Windows**: the installer runs and the app closes while it finishes —
   reopen the app if it does not restart by itself.
-- **Linux `~/.local` installs**: the binary, desktop entry, and icons under
-  your install prefix are replaced in place; restart from the app afterwards.
-- **System-wide Linux installs** (for example `/usr` via pacman) cannot
-  self-update; use your package manager instead.
 - **macOS**: updates through the same signed flow as Windows.
+- **Linux (pacman `/usr` installs)**: no in-app self-update; update manually
+  with `sudo pacman -U` using the newer `.pkg.tar.zst` file or URL (see the
+  Linux section). `pacman -Syu` alone will not update this developer-hosted
+  package.
 
 ## Using the app
 
@@ -169,10 +195,11 @@ History loads newest first in pages of 100 results.
 The frontend invokes `get_lessons`, `get_progress`, and `save_progress` directly
 through Tauri. Rust serializes database access on a background worker and validates
 the command payloads; the webview cannot submit SQL or choose database paths.
-The only network use is the update flow: fetching the signed release manifest
-and update payloads from GitHub Releases, verified against the updater public
-key before installing. There is no other HTTP traffic, CORS configuration, API
-tokens, or shell plugin.
+The only network use is the update flow on Windows/macOS: fetching the signed
+release manifest and update payloads from GitHub Releases, verified against
+the updater public key before installing. Linux pacman installs update
+manually via `pacman -U` and do not use the in-app updater. There is no other
+HTTP traffic, CORS configuration, API tokens, or shell plugin.
 SQLite retains WAL mode, full synchronization, foreign keys, and a write timeout.
 Failed database opens can be retried from the UI. Writes are never retried
 automatically, and loading/save failures are shown in the interface.
@@ -183,7 +210,7 @@ Project layout:
 frontend/           Vue interface
 src-tauri/          Rust commands, SQLite backend, tests, and desktop configuration
 scripts/            Release version checks and the updater manifest builder
-packaging/linux/    Linux ~/.local tarball scripts (build-tarball, install, uninstall)
+packaging/arch/     Arch Linux PKGBUILD and packaging script (pacman .pkg.tar.zst)
 .github/            Build/release workflow and Dependabot configuration
 docs/               Additional maintainer documentation
 ```
@@ -209,7 +236,7 @@ release, and creating a tag locally does not trigger Actions until it is pushed.
 ### Publish a version
 
 Update the version in `package.json`, `src-tauri/Cargo.toml`,
-and `src-tauri/tauri.conf.json`. Keep the corresponding
+`src-tauri/tauri.conf.json`, and `packaging/arch/PKGBUILD`. Keep the corresponding
 lock files consistent, and commit those changes. Then push an unused matching tag;
 for example, after updating to `0.1.2`:
 
@@ -228,9 +255,8 @@ schema rejection, history pagination, and persistence on every operating system.
 Actions are pinned to commit IDs. Published releases cannot be overwritten by
 a rerun; use a new version tag. Releases include `SHA256SUMS` for the packages.
 
-Windows code signing is not configured. That
-requires real signing credentials and workflow integration (Linux `~/.local`
-installs need no signing). macOS DMGs currently use ad-hoc signing only;
+Windows code signing and pacman package signing are not configured. Those
+require real signing credentials and workflow integration. macOS DMGs currently use ad-hoc signing only;
 a Developer ID certificate with notarization is required before calling any
 macOS build a public release. See
 [the release guide](docs/RELEASING.md) for maintainer details. Dependabot is

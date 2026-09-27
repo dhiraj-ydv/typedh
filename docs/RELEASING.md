@@ -6,18 +6,18 @@ The **Desktop build** workflow runs on pull requests, pushes to `master`, versio
 tags, and manual dispatches. It produces:
 
 - an unsigned Windows NSIS `.exe` installer (plus its updater `.sig`);
-- a Linux x86-64 `~/.local` tarball (`.tar.zst` plus a detached `.sig`) containing
-  the app plus `install.sh` and `uninstall.sh`; and
+- an Arch Linux pacman package `colemak-dh-tutor-<version>-1-x86_64.pkg.tar.zst`
+  for x86-64; and
 - two macOS `.dmg` installers: `aarch64` (Apple Silicon) and `x86_64` (Intel),
   plus per-arch `.app.tar.gz` updater archives with `.sig` files.
 
 Ordinary builds retain these as workflow artifacts for 14 days (Windows,
 Linux, and two macOS artifacts). Pushing a
 version tag publishes a GitHub prerelease and attaches the packaged
-applications together with `latest.json` (the signed updater manifest) and a
-`SHA256SUMS` file. This uses the automatic per-run `GITHUB_TOKEN` plus the
-`TAURI_SIGNING_PRIVATE_KEY` repository secret for update signatures; no
-personal access token is required.
+applications together with `latest.json` (the signed updater manifest for
+Windows/macOS) and a `SHA256SUMS` file. This uses the automatic per-run
+`GITHUB_TOKEN` plus the `TAURI_SIGNING_PRIVATE_KEY` repository secret for
+update signatures; no personal access token is required.
 
 Before packaging, CI validates matching application versions, runs frontend
 regression tests, and audits JavaScript dependencies. Every platform job compiles
@@ -28,11 +28,34 @@ include a `SHA256SUMS` file. An already published release cannot be overwritten
 by rerunning the workflow; create a new version instead.
 
 The Linux job builds a temporary Debian staging package with Tauri, then runs
-`packaging/linux/build-tarball.sh` (no Docker/Arch container) to repack its
-`usr/bin`, `usr/share/applications`, `usr/share/icons`, and `usr/share/metainfo`
-payload into a `colemak-dh-tutor-<version>-x86_64/` directory with `install.sh`,
-`uninstall.sh`, `README.md`, and `VERSION`. The intermediate `.deb` itself is
-not published.
+`packaging/arch/build-pkg.sh` inside an Arch Linux container (Docker +
+`makepkg`) to produce the pacman package. The `.deb` itself is not published.
+
+## Linux Arch package
+
+The `linux-arch` job runs on `ubuntu-24.04`:
+
+1. Install Tauri system prerequisites
+   (`libwebkit2gtk-4.1-dev`, `libappindicator3-dev`, `librsvg2-dev`,
+   `patchelf`).
+2. Build icons and a Debian staging package:
+   `npm run tauri build -- --bundles deb`.
+3. Repack the `.deb` payload (`usr/bin`, `usr/share/applications`,
+   `usr/share/icons`, `usr/share/metainfo`) into `packaging/arch/work/root/`
+   and run `makepkg` in `archlinux:latest` via
+   `packaging/arch/build-pkg.sh`, producing
+   `dist/colemak-dh-tutor-<version>-1-x86_64.pkg.tar.zst`.
+
+`packaging/arch/PKGBUILD` declares the pacman runtime `depends`:
+
+> cairo desktop-file-utils gdk-pixbuf2 glib2 gtk3 hicolor-icon-theme
+> libayatana-appindicator librsvg libsoup3 openssl pango webkit2gtk-4.1
+
+Keep `pkgver` in sync with `package.json` / `src-tauri/Cargo.toml` /
+`src-tauri/tauri.conf.json` (enforced by `scripts/check-release.mjs`);
+`pkgrel` is `1`. The package installs system-wide under `/usr` via
+`pacman -U`; it is developer-hosted on GitHub Releases, not published to the
+AUR or a custom pacman repo, so `pacman -Syu` alone will not update it.
 
 ## macOS DMGs (Apple Silicon + Intel)
 
@@ -95,40 +118,41 @@ and a Mac, and cannot be validated from Linux/Windows CI alone:
 
 Until that is wired up, treat every macOS DMG as a test build.
 
-## Decision on the previous `.pkg.tar.zst`
+## Decision on the retired `~/.local` tarball
 
-The Arch pacman artifact (`colemak-dh-tutor-<version>-1-x86_64.pkg.tar.zst`,
-built via `packaging/arch/PKGBUILD` + `makepkg`) was **removed** once the
-tarball became primary (issue #10). Rationale:
+The per-user Linux tarball (`colemak-dh-tutor-<version>-x86_64.tar.zst` with
+`packaging/linux/build-tarball.sh`, `install.sh`, `uninstall.sh` installing
+under `~/.local`, issue #10) was **removed** once the pacman package became
+primary (issue #17). Rationale:
 
-- `~/.local` installs are user-owned, enabling a future in-app updater without
-  sudo/pacman;
+- `pacman -U` is the standard Arch install/upgrade path and handles
+  system-wide files plus declared runtime `depends`;
 - GitHub Releases stays the distribution path (no AUR maintenance);
 - one Linux artifact keeps version sync, CI time, and docs simpler.
 
-There is no pacman/AUR/Flatpak/AppImage publication path in this workflow.
-System-wide installs (for example `/usr` via pacman) are intentionally excluded
-from in-app updates; only user-owned `~/.local` installs self-update (see
-"In-app updates" below).
+There is no AUR, custom pacman repo, Flatpak, or AppImage publication path in
+this workflow. Pacman `/usr` installs are intentionally excluded from in-app
+updates; Linux updates are manual via `pacman -U` (see "In-app updates"
+below). Anyone still on the old `~/.local` install should run `./uninstall.sh`
+from the old extracted directory (same `--prefix`), then install the pacman
+package.
 
 ## In-app updates
 
 The app's **Updates** view checks
 `https://github.com/exolithelabs/colemak-dh-tutor/releases/latest/download/latest.json`
 for a newer signed release. Windows and macOS use the stock Tauri updater
-(installer / `.app.tar.gz` payloads); Linux `~/.local` installs use a backend
-flow (`src-tauri/src/linux_update.rs`) that downloads the release tarball,
-verifies its minisign signature against the same updater public key, extracts
-it over the install prefix, and restarts. Unsigned or tampered payloads are
-rejected before any file is replaced.
+(installer / `.app.tar.gz` payloads). Linux pacman `/usr` installs have no
+in-app self-update path (replacing package-manager-owned files is out of
+scope); Linux users update manually with `sudo pacman -U` using the newer
+`.pkg.tar.zst` file or URL. Unsigned or tampered payloads are rejected before
+any file is replaced.
 
 ### Keys and secrets
 
 - The updater keypair was generated with `tauri signer generate` (passwordless).
-- The public key is committed in two places that must agree (enforced by the
-  `pubkey_matches_config` Rust test): `plugins.updater.pubkey` in
-  `src-tauri/tauri.conf.json` and `UPDATE_PUBKEY_BASE64` in
-  `src-tauri/src/linux_update.rs`.
+- The public key is committed as `plugins.updater.pubkey` in
+  `src-tauri/tauri.conf.json`.
 - The private key lives only in the `TAURI_SIGNING_PRIVATE_KEY` repository
   secret and in one offline backup. If it is lost, installed apps can never
   accept another auto-update — back it up before you need it. Never commit it.
@@ -143,15 +167,13 @@ rejected before any file is replaced.
   secrets, so the bundler writes `.sig` files next to the payloads. Without
   the secret the build still succeeds but unsigned (clients reject those
   updates).
-- The Linux job signs the tarball after packing it:
-  `tauri signer sign` with the key from the environment, writing
-  `dist/colemak-dh-tutor-<version>-x86_64.tar.zst.sig`.
 - On `v*` tags the release job runs `scripts/build-updater-manifest.mjs`,
   which pairs each payload with its `.sig` content into `latest.json`
-  (`windows-x86_64`, `darwin-aarch64`, `darwin-x86_64`, `linux-x86_64`) and
-  attaches it with the installers. Missing payloads fail the job; missing
-  signatures warn and ship empty (clients reject them). The script's
-  `--self-test` runs in CI on every build.
+  (`windows-x86_64`, `darwin-aarch64`, `darwin-x86_64`) and attaches it with
+  the installers. The Arch `.pkg.tar.zst` is intentionally excluded from the
+  manifest. Missing payloads fail the job; missing signatures warn and ship
+  empty (clients reject them). The script's `--self-test` runs in CI on every
+  build.
 - Builds without the secret (forks, Dependabot) stay green via
   `scripts/ensure-updater-config.mjs`, which strips the updater section for
   an unsigned validation build. Those artifacts cannot self-update; every
@@ -161,20 +183,22 @@ rejected before any file is replaced.
 
 1. After a tag release, fetch
    `https://github.com/exolithelabs/colemak-dh-tutor/releases/latest/download/latest.json`
-   and confirm all four platform entries have non-empty `signature` fields.
-2. Confirm each `url` downloads and its bytes match `SHA256SUMS`.
+   and confirm all three platform entries have non-empty `signature` fields.
+2. Confirm each `url` downloads and its bytes match `SHA256SUMS`. Confirm the
+   Arch `.pkg.tar.zst` is attached separately and its bytes match
+   `SHA256SUMS`.
 3. End-to-end: install build N, push a new version tag, then use the app's
-   **Updates** view to move to N+1 and confirm the version and progress
-   survive. On Linux, confirm `~/.local/bin`, the desktop entry
-   (`Exec=` pointing at the prefix), and icons were replaced; on Windows,
-   confirm the installer flow and relaunch.
+   **Updates** view to move to N+1 on Windows/macOS and confirm the version
+   and progress survive. On Linux, verify a fresh `sudo pacman -U` install
+   launches from the application menu / `colemak-dh-tutor`, then upgrade with
+   `sudo pacman -U` to the newer package and confirm progress survives.
 
 ## Creating a release candidate
 
 Ensure the version matches in `package.json`, `src-tauri/Cargo.toml`,
-`src-tauri/tauri.conf.json`, and their lockfiles, then
-push the commit and a matching unused version tag (for example, after bumping to
-0.1.2):
+`src-tauri/tauri.conf.json`, `packaging/arch/PKGBUILD`, and their lockfiles,
+then push the commit and a matching unused version tag (for example, after
+bumping to 0.1.2):
 
 ```bash
 git tag v0.1.2
@@ -183,14 +207,17 @@ git push origin master v0.1.2
 
 After all platform jobs pass, the workflow publishes the prerelease with its
 downloadable assets. Install-test these builds (including an N → N+1 in-app
-update where possible) before promoting them to a stable release.
+update on Windows/macOS and an N → N+1 `pacman -U` upgrade on Linux where
+possible) before promoting them to a stable release.
 
 ## Before the first public release
 
 1. Review and install all CI artifacts on clean virtual machines (Windows,
    Linux, and both macOS architectures).
-2. Confirm `latest.json` on a tag release carries signatures for all four
-   platforms, and that the Updates view moves an installed build forward.
+2. Confirm `latest.json` on a tag release carries signatures for all three
+   updater platforms, and that the Updates view moves an installed
+   Windows/macOS build forward. Confirm the Arch package installs and upgrades
+   via `pacman -U`.
 3. Back up the `TAURI_SIGNING_PRIVATE_KEY` offline, outside the repository.
 2. Acquire a Windows Authenticode certificate and configure Tauri signing.
    Unsigned installers work, but Windows will show an unverified-publisher
@@ -205,26 +232,26 @@ update where possible) before promoting them to a stable release.
 Users install the macOS DMG by opening it and dragging **Colemak-DH Tutor**
 to **Applications**, then launching from Applications or Spotlight.
 
-Users install the Linux tarball with:
+Users install or update the Arch package with `pacman -U`. All three reach
+the same package; only how the file reaches `pacman` differs:
 
 ```bash
-tar --zstd -xf colemak-dh-tutor-<version>-x86_64.tar.zst
-cd colemak-dh-tutor-<version>-x86_64
-./install.sh
+sudo pacman -U ./colemak-dh-tutor-<version>-1-x86_64.pkg.tar.zst
 ```
 
-This installs the binary to `~/.local/bin/`, the desktop entry to
-`~/.local/share/applications/`, and icons to `~/.local/share/icons/`.
-Custom prefixes work via `./install.sh --prefix DIR`; `./uninstall.sh`
-removes the same files. The desktop menu entry appears after install (the
-script refreshes `update-desktop-database` / icon caches when available).
+```bash
+sudo pacman -U "https://github.com/exolithelabs/colemak-dh-tutor/releases/download/v0.1.2/colemak-dh-tutor-0.1.2-1-x86_64.pkg.tar.zst"
+```
 
-The tarball does not bundle the system WebKit/GTK runtime. Test on an
-Arch-based system with the Tauri prerequisites installed; the Arch pacman
-names carried over from the old `PKGBUILD` were `cairo desktop-file-utils
-gdk-pixbuf2 glib2 gtk3 hicolor-icon-theme libayatana-appindicator librsvg
-libsoup3 openssl pango webkit2gtk-4.1`. The generated tarball `README.md`
-repeats these names for installers.
+```bash
+curl -L -O "https://github.com/exolithelabs/colemak-dh-tutor/releases/download/v0.1.2/colemak-dh-tutor-0.1.2-1-x86_64.pkg.tar.zst"
+sudo pacman -U ./colemak-dh-tutor-0.1.2-1-x86_64.pkg.tar.zst
+```
+
+Pacman installs the binary under `/usr/bin`, the desktop entry, icons, and
+the declared WebKit/GTK runtime dependencies. This path does not use the AUR
+or `pacman -Syu` auto-updates; updates are manual `pacman -U` runs against
+newer release files/URLs.
 
 The generated prerelease is suitable for testing. Do not promote it to a
 public production release until signing identities are final. Those values

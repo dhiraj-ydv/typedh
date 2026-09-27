@@ -94,18 +94,18 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-  linux-tarball:
-    name: Linux ~/.local tarball
+  linux-arch:
+    name: Linux Arch package
     runs-on: ubuntu-24.04
     needs: quality
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Install Linux build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf zstd
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
@@ -132,26 +132,14 @@ jobs:
 
       - name: Build icons and Debian staging package
         run: |
-          chmod +x packaging/linux/build-tarball.sh packaging/linux/install.sh packaging/linux/uninstall.sh
+          chmod +x packaging/arch/build-pkg.sh
           npm run tauri icon frontend/public/favicon.svg
           npm run tauri build -- --bundles deb
 
-      - name: Build ~/.local tarball
+      - name: Build Arch package
         run: |
           deb_path=$(find src-tauri/target/release/bundle/deb -name '*.deb' -print -quit)
-          ./packaging/linux/build-tarball.sh "$deb_path"
-
-      - name: Sign Linux tarball for in-app updates
-        env:
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-        run: |
-          if [[ -n "${TAURI_SIGNING_PRIVATE_KEY:-}" ]]; then
-            tarball=$(find dist -maxdepth 1 -name 'colemak-dh-tutor-*-x86_64.tar.zst' -print -quit)
-            timeout 120 npm run tauri signer sign -- "$tarball" </dev/null
-            ls dist/*.sig
-          else
-            echo "No updater signing key; publishing an unsigned tarball (in-app updates will reject it)."
-          fi
+          ./packaging/arch/build-pkg.sh "$deb_path"
 
       - name: Test native backend and persistence
         run: cargo test --locked --manifest-path src-tauri/Cargo.toml --lib
@@ -159,9 +147,7 @@ jobs:
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: Colemak-DH-Tutor-Linux-x86_64
-          path: |
-            dist/colemak-dh-tutor-*-x86_64.tar.zst
-            dist/*.sig
+          path: dist/colemak-dh-tutor-*-x86_64.pkg.tar.zst
           if-no-files-found: error
           retention-days: 14
 
@@ -231,7 +217,7 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v')
     needs:
       - windows-installer
-      - linux-tarball
+      - linux-arch
       - macos-dmg
     runs-on: ubuntu-latest
     timeout-minutes: 10

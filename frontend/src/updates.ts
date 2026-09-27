@@ -1,5 +1,3 @@
-import type { LinuxTargetInfo } from './native-api';
-
 /** A stock-updater install waiting for user consent. Implemented by the view. */
 export interface PendingStockUpdate {
   version: string;
@@ -11,7 +9,6 @@ export interface UpdateFlowDeps {
   getAppVersion(): Promise<string>;
   /** Resolves null when no newer signed release exists. */
   checkPlugin(): Promise<PendingStockUpdate | null>;
-  linuxInfo(): Promise<LinuxTargetInfo>;
 }
 
 export type UpdateCheck =
@@ -23,7 +20,6 @@ export type UpdateCheck =
       notes: string;
       install: PendingStockUpdate['install'];
     }
-  | { kind: 'available-linux'; currentVersion: string; version: string; notes: string }
   | { kind: 'unsupported'; currentVersion: string; reason: string }
   | { kind: 'error'; currentVersion: string | null; message: string };
 
@@ -31,30 +27,31 @@ export function isDesktop(): boolean {
   return typeof window !== 'undefined' && '__TAURI__' in window;
 }
 
+export function isLinux(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  const userAgentData = (navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData;
+  const platform = userAgentData?.platform ?? (navigator as Navigator).platform ?? '';
+  const userAgent = (navigator as Navigator).userAgent ?? '';
+  return /linux/i.test(platform) || /linux/i.test(userAgent);
+}
+
+export const LINUX_PACMAN_MESSAGE =
+  'Linux installs update with sudo pacman -U, not in-app updates. Download the newer .pkg.tar.zst from GitHub Releases and run sudo pacman -U on it; pacman -Syu alone will not pick it up.';
+
 /**
- * Check for updates. Version discovery always goes through the signed
- * updater manifest; only the install step differs: user-owned Linux
- * `~/.local` installs self-update through the backend, everything else
- * uses the stock Tauri installer flow.
+ * Check for updates. Windows and macOS use the signed stock Tauri updater
+ * flow. Linux (Arch `.pkg.tar.zst` via `pacman -U`, issue #17) has no
+ * in-app updater and is reported as unsupported with pacman instructions.
  */
 export async function checkForUpdates(deps: UpdateFlowDeps): Promise<UpdateCheck> {
   let currentVersion: string | null = null;
   try {
     currentVersion = await deps.getAppVersion();
+    if (isLinux()) {
+      return { kind: 'unsupported', currentVersion, reason: LINUX_PACMAN_MESSAGE };
+    }
     const pending = await deps.checkPlugin();
     if (!pending) return { kind: 'up-to-date', currentVersion };
-    const target = await deps.linuxInfo();
-    if (target.managed) {
-      return {
-        kind: 'available-linux',
-        currentVersion,
-        version: pending.version,
-        notes: pending.notes,
-      };
-    }
-    if (target.os === 'linux') {
-      return { kind: 'unsupported', currentVersion, reason: target.reason };
-    }
     return {
       kind: 'available-stock',
       currentVersion,
