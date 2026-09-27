@@ -7,6 +7,7 @@ import {
   progressFraction,
   isDesktop,
   isLinux,
+  isLinuxFromUserAgent,
   LINUX_PACMAN_MESSAGE,
 } from '../src/updates.ts';
 
@@ -14,43 +15,22 @@ function deps(overrides = {}) {
   return {
     getAppVersion: async () => '0.1.2',
     checkPlugin: async () => null,
+    isLinuxPlatform: () => false,
     ...overrides,
   };
 }
 
-function withLinuxUserAgent(value, fn) {
-  const hadNavigator = 'navigator' in globalThis;
-  const previous = globalThis.navigator;
-  if (value === null) {
-    // Non-Linux desktop stub (Windows UA); never rely on deleting Node's
-    // built-in navigator global, which is non-configurable on some runtimes.
-    // @ts-ignore - test helper installs a minimal navigator stub.
-    globalThis.navigator = { userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)', platform: '' };
-  } else {
-    // @ts-ignore - test helper installs a minimal navigator stub.
-    globalThis.navigator = { userAgent: value, platform: '' };
-  }
-  try {
-    return fn();
-  } finally {
-    if (hadNavigator) globalThis.navigator = previous;
-    else delete globalThis.navigator;
-  }
-}
-
 test('no newer release reports up-to-date', async () => {
-  const result = await withLinuxUserAgent(null, () => checkForUpdates(deps()));
+  const result = await checkForUpdates(deps());
   assert.deepEqual(result, { kind: 'up-to-date', currentVersion: '0.1.2' });
 });
 
 test('newer release on Windows/macOS uses the stock installer flow', async () => {
   const install = async () => {};
-  const result = await withLinuxUserAgent(null, () =>
-    checkForUpdates(
-      deps({
-        checkPlugin: async () => ({ version: '0.2.0', notes: 'Faster.', install }),
-      }),
-    ),
+  const result = await checkForUpdates(
+    deps({
+      checkPlugin: async () => ({ version: '0.2.0', notes: 'Faster.', install }),
+    }),
   );
   assert.equal(result.kind, 'available-stock');
   assert.equal(result.version, '0.2.0');
@@ -59,12 +39,11 @@ test('newer release on Windows/macOS uses the stock installer flow', async () =>
 });
 
 test('Linux pacman installs are unsupported with pacman instructions', async () => {
-  const result = await withLinuxUserAgent('Mozilla/5.0 (X11; Linux x86_64)', () =>
-    checkForUpdates(
-      deps({
-        checkPlugin: async () => ({ version: '0.2.0', notes: '', install: async () => {} }),
-      }),
-    ),
+  const result = await checkForUpdates(
+    deps({
+      checkPlugin: async () => ({ version: '0.2.0', notes: '', install: async () => {} }),
+      isLinuxPlatform: () => true,
+    }),
   );
   assert.deepEqual(result, {
     kind: 'unsupported',
@@ -75,27 +54,23 @@ test('Linux pacman installs are unsupported with pacman instructions', async () 
 });
 
 test('check failures surface friendly messages with the current version', async () => {
-  const offline = await withLinuxUserAgent(null, () =>
-    checkForUpdates(
-      deps({
-        checkPlugin: async () => {
-          throw new Error('failed to fetch latest.json: network unreachable');
-        },
-      }),
-    ),
+  const offline = await checkForUpdates(
+    deps({
+      checkPlugin: async () => {
+        throw new Error('failed to fetch latest.json: network unreachable');
+      },
+    }),
   );
   assert.equal(offline.kind, 'error');
   assert.equal(offline.currentVersion, '0.1.2');
   assert.match(offline.message, /connection/i);
 
-  const noVersion = await withLinuxUserAgent(null, () =>
-    checkForUpdates(
-      deps({
-        getAppVersion: async () => {
-          throw new Error('invoke not available');
-        },
-      }),
-    ),
+  const noVersion = await checkForUpdates(
+    deps({
+      getAppVersion: async () => {
+        throw new Error('invoke not available');
+      },
+    }),
   );
   assert.equal(noVersion.kind, 'error');
   assert.equal(noVersion.currentVersion, null);
@@ -121,23 +96,14 @@ test('isDesktop is false outside the Tauri webview', () => {
   assert.equal(isDesktop(), false);
 });
 
-test('isLinux detects Linux user agents and ignores Node and non-Linux UAs', () => {
-  assert.equal(
-    withLinuxUserAgent('Mozilla/5.0 (X11; Linux x86_64)', () => isLinux()),
-    true,
-  );
-  assert.equal(
-    withLinuxUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64)', () => isLinux()),
-    false,
-  );
-  assert.equal(
-    withLinuxUserAgent(null, () => isLinux()),
-    false,
-  );
-  assert.equal(
-    withLinuxUserAgent('Node.js/v22.0.0', () => isLinux()),
-    false,
-  );
+test('Linux UA detection ignores Node and non-Linux UAs', () => {
+  assert.equal(isLinuxFromUserAgent('Mozilla/5.0 (X11; Linux x86_64)', ''), true);
+  assert.equal(isLinuxFromUserAgent('Mozilla/5.0 (X11; Linux x86_64)', 'Linux'), true);
+  assert.equal(isLinuxFromUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64)', ''), false);
+  assert.equal(isLinuxFromUserAgent('Node.js/v22.0.0', ''), false);
+  assert.equal(isLinuxFromUserAgent('', ''), false);
+  // Real isLinux() never throws and returns a boolean in any host.
+  assert.equal(typeof isLinux(), 'boolean');
 });
 
 test('native commands use the expected payload shapes', async () => {

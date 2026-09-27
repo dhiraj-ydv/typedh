@@ -9,6 +9,8 @@ export interface UpdateFlowDeps {
   getAppVersion(): Promise<string>;
   /** Resolves null when no newer signed release exists. */
   checkPlugin(): Promise<PendingStockUpdate | null>;
+  /** Test seam for platform detection; defaults to the real isLinux(). */
+  isLinuxPlatform?: () => boolean;
 }
 
 export type UpdateCheck =
@@ -27,16 +29,22 @@ export function isDesktop(): boolean {
   return typeof window !== 'undefined' && '__TAURI__' in window;
 }
 
+/** Pure Linux detection from UA strings; isolated for unit tests. */
+export function isLinuxFromUserAgent(userAgent: string, userAgentDataPlatform = ''): boolean {
+  // Node.js exposes a navigator global (userAgent "Node.js/..."); never treat
+  // the test/runtime host itself as a Linux desktop.
+  if (/node\.js/i.test(userAgent)) return false;
+  return /linux/i.test(userAgentDataPlatform) || /linux/i.test(userAgent);
+}
+
 export function isLinux(): boolean {
   if (typeof navigator === 'undefined') return false;
   const nav = navigator as Navigator & { userAgentData?: { platform?: string } };
-  const userAgent = nav.userAgent ?? '';
-  // Node.js exposes a navigator global (userAgent "Node.js/..."); never treat
-  // the test/runtime host itself as a Linux desktop. Real Linux browsers and
-  // WebViews carry "Linux" in the userAgent.
-  if (/node\.js/i.test(userAgent)) return false;
-  const platform = nav.userAgentData?.platform ?? '';
-  return /linux/i.test(platform) || /linux/i.test(userAgent);
+  try {
+    return isLinuxFromUserAgent(nav.userAgent ?? '', nav.userAgentData?.platform ?? '');
+  } catch {
+    return false;
+  }
 }
 
 export const LINUX_PACMAN_MESSAGE =
@@ -51,7 +59,8 @@ export async function checkForUpdates(deps: UpdateFlowDeps): Promise<UpdateCheck
   let currentVersion: string | null = null;
   try {
     currentVersion = await deps.getAppVersion();
-    if (isLinux()) {
+    const linux = deps.isLinuxPlatform ? deps.isLinuxPlatform() : isLinux();
+    if (linux) {
       return { kind: 'unsupported', currentVersion, reason: LINUX_PACMAN_MESSAGE };
     }
     const pending = await deps.checkPlugin();
